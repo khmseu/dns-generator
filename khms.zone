@@ -1,0 +1,56 @@
+; khms.zone
+
+khms.	86400	IN	SOA	( ns0.khms1.de. root.khms1.de.
+				2026051807	;serial
+				43200		;refresh
+				7200		;retry
+				2419200		;expire
+				86400		;minimum
+	)
+khms.	IN	NS	desktop.dnstunnel.khms.
+khms.	IN	NS	dns.dnstunnel.khms.
+desktop.dnstunnel.khms.	86400	IN	A	10.18.0.2
+desktop.dnstunnel.khms.	86400	IN	MX	10 mail.khms.
+desktop.khms.	86400	IN	A	192.168.87.2
+desktop.khms.	86400	IN	MX	10 mail.khms.
+desktop.mailtunnel.khms.	86400	IN	A	10.28.0.2
+desktop.mailtunnel.khms.	86400	IN	MX	10 mail.khms.
+desktop.west.khms.	86400	IN	A	192.168.87.2
+desktop.west.khms.	86400	IN	MX	10 mail.khms.
+devel.cloud.khms.	86400	IN	A	178.104.223.86
+devel.cloud.khms.	86400	IN	MX	10 mail.khms.
+devel.khms.	86400	IN	A	178.104.223.86
+devel.khms.	86400	IN	MX	10 mail.khms.
+dns.cloud.khms.	86400	IN	A	94.130.183.229
+dns.cloud.khms.	86400	IN	MX	10 mail.khms.
+dns.dnstunnel.khms.	86400	IN	A	10.18.0.1
+dns.dnstunnel.khms.	86400	IN	MX	10 mail.khms.
+dns.khms.	86400	IN	A	10.18.0.1
+dns.khms.	86400	IN	MX	10 mail.khms.
+east-n.north.khms.	86400	IN	A	192.168.2.100
+east-n.north.khms.	86400	IN	MX	10 mail.khms.
+east.east.khms.	86400	IN	A	192.168.88.14
+east.east.khms.	86400	IN	MX	10 mail.khms.
+laptop.east.khms.	86400	IN	A	192.168.88.44
+laptop.east.khms.	86400	IN	MX	10 mail.khms.
+laptop.west.khms.	86400	IN	A	192.168.87.44
+laptop.west.khms.	86400	IN	MX	10 mail.khms.
+mail.cloud.khms.	86400	IN	A	195.201.17.234
+mail.cloud.khms.	86400	IN	MX	10 mail.khms.
+mail.khms.	86400	IN	A	10.28.0.1
+mail.khms.	86400	IN	MX	10 mail.khms.
+mail.mailtunnel.khms.	86400	IN	A	10.28.0.1
+mail.mailtunnel.khms.	86400	IN	MX	10 mail.khms.
+north.north.khms.	86400	IN	A	192.168.2.1
+north.north.khms.	86400	IN	MX	10 mail.khms.
+oldmail.rootsvr.khms.	86400	IN	A	188.40.57.58
+oldmail.rootsvr.khms.	86400	IN	MX	10 mail.khms.
+oldroot.rootsvr.khms.	86400	IN	A	188.40.57.14
+oldroot.rootsvr.khms.	86400	IN	MX	10 mail.khms.
+west.east.khms.	86400	IN	A	192.168.88.15
+west.east.khms.	86400	IN	MX	10 mail.khms.
+west.west.khms.	86400	IN	A	192.168.87.15
+west.west.khms.	86400	IN	MX	10 mail.khms.
+westfalen.gws.khms.	86400	IN	A	78.47.110.152
+westfalen.gws.khms.	86400	IN	MX	10 mail.khms.
+

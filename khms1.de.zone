@@ -1,0 +1,31 @@
+; khms1.de.zone
+
+khms1.de.	86400	IN	SOA	( ns0.khms1.de. root.khms1.de.
+				2026051807	;serial
+				43200		;refresh
+				7200		;retry
+				2419200		;expire
+				86400		;minimum
+	)
+khms1.de.	IN	NS	ns0.khms1.de.
+khms1.de.	IN	NS	ns1.first-ns.de.
+khms1.de.	IN	NS	robotns2.second-ns.de.
+devel.khms1.de.	86400	IN	A	178.104.223.86
+devel.khms1.de.	86400	IN	MX	10 mail.khms1.de.
+dns-server.khms1.de.	86400	IN	A	94.130.183.229
+dns-server.khms1.de.	86400	IN	MX	10 mail.khms1.de.
+dns.khms1.de.	86400	IN	A	94.130.183.229
+dns.khms1.de.	86400	IN	MX	10 mail.khms1.de.
+mail-server.khms1.de.	86400	IN	A	195.201.17.234
+mail-server.khms1.de.	86400	IN	MX	10 mail.khms1.de.
+mail.khms1.de.	86400	IN	A	195.201.17.234
+mail.khms1.de.	86400	IN	MX	10 mail.khms1.de.
+ns0.khms1.de.	86400	IN	A	94.130.183.229
+ns0.khms1.de.	86400	IN	MX	10 mail.khms1.de.
+oldmail.khms1.de.	86400	IN	A	188.40.57.58
+oldmail.khms1.de.	86400	IN	MX	10 mail.khms1.de.
+oldroot.khms1.de.	86400	IN	A	188.40.57.14
+oldroot.khms1.de.	86400	IN	MX	10 mail.khms1.de.
+www.khms1.de.	86400	IN	A	188.40.57.14
+www.khms1.de.	86400	IN	MX	10 mail.khms1.de.
+
