@@ -1,4 +1,5 @@
 # this repo
+.vscode/perl-lang
 attrs
 khms-zones.conf.tmp
 l
