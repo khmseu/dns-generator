@@ -1,9 +1,9 @@
 #! /usr/bin/perl
-
 use 5.026;
 use strict;
 use autodie  qw( :all );
 use warnings qw( all );
+no warnings qw( experimental::signatures );
 no warnings qw( experimental::smartmatch );
 use Data::Dumper::Simple;
 $Data::Dumper::Useqq    = 1;
@@ -150,34 +150,34 @@ sub add_more($$$) {
         my $data = $network{more}{$r};
         my @data = split /:/, $data->[0];
         if ($ext) {
-            @data = map { s/\$/$origin/g; $_ } @data;
+            @data = map { my $x = $_; $x =~ s/\$/\$origin/g; $x } @data;
         }
         else {
-            @data = map { s/\$/$internal_domain/g; $_ } @data;
+            @data = map { my $x = $_; $x =~ s/\$/\$internal_domain/g; $x } @data;
         }
 
         #print Dumper($data, @data);
-        my $rr = new Net::DNS::RR( join( ' ', $name, $r, @data ) );
+        my $rr = Net::DNS::RR->new( join( ' ', $name, $r, @data ) );
         $rr->ttl( 60 * 60 * 24 );
         $output{$origin}{ $rr->string }++;
     }
 }
 
 my @priv = (
-    new NetAddr::IP('10/8'),
-    new NetAddr::IP('172.16/12')->split(16),
-    new NetAddr::IP('192.168/16'),
+    NetAddr::IP->new('10/8'),
+    NetAddr::IP->new('172.16/12')->split(16),
+    NetAddr::IP->new('192.168/16'),
 
-    #new NetAddr::IP('127/8'),
+    #NetAddr::IP->new('127/8'),
 );
 
 sub is_priv($) {
     my $ip  = shift;
-    my $ipo = new NetAddr::IP $ip;
+    my $ipo = NetAddr::IP->new($ip);
     for my $p (@priv) {
         if ( $ipo->within($p) ) {
             my $adr = $p->addr;
-            my $q   = new Net::DNS::Question $adr;
+            my $q   = Net::DNS::Question->new($adr);
             my $rev = $q->name;
             $rev =~ s/^(0\.)*//;
             return $rev;
@@ -191,7 +191,7 @@ my %a;
 for my $h ( sort keys %hosts ) {
     for my $s ( sort keys %{ $hosts{$h}{net4} } ) {
         my $ip = inet_ntoa( $hosts{$h}{net4}{$s} );
-        my $rr = new Net::DNS::RR(
+        my $rr = Net::DNS::RR->new(
             owner   => "$h.$s.$internal_domain",
             ttl     => 60 * 60 * 24,
             type    => 'A',
@@ -200,8 +200,8 @@ for my $h ( sort keys %hosts ) {
         $a{ $rr->owner } = $rr->address;
         $output{"$internal_domain"}{ $rr->string }++;
         add_more "$h.$s.$internal_domain", "$internal_domain", 0;
-        my $q = new Net::DNS::Question($ip);
-        $rr = new Net::DNS::RR(
+        my $q = Net::DNS::Question->new($ip);
+        $rr = Net::DNS::RR->new(
             ptrdname => "$h.$s.$internal_domain",
             ttl      => 60 * 60 * 24,
             type     => 'PTR',
@@ -227,7 +227,7 @@ for my $h ( sort keys %hosts ) {
         #print Dumper($h, %externally_visible) if not $prv;
         if ( not exists $subnets{$s}{num} and not defined $prv and exists $externally_visible{$h} ) {
             for my $d (@external_domains) {
-                my $rr = new Net::DNS::RR(
+                my $rr = Net::DNS::RR->new(
                     owner   => "$h.$d",
                     ttl     => 60 * 60 * 24,
                     type    => 'A',
@@ -237,8 +237,8 @@ for my $h ( sort keys %hosts ) {
                 $output{$d}{ $rr->string }++;
                 add_more "$h.$d", $d, 1;
                 if (1) {
-                    my $q = new Net::DNS::Question($ip);
-                    $rr = new Net::DNS::RR(
+                    my $q = Net::DNS::Question( $ip->new );
+                    $rr = Net::DNS::RR->new(
                         ptrdname => "$h.$d",
                         ttl      => 60 * 60 * 24,
                         type     => 'PTR',
@@ -263,7 +263,7 @@ for my $h ( sort keys %hosts ) {
                     if ($t) {
                         if ( $t eq $h ) {
                             if (0) {
-                                $rr = new Net::DNS::RR(
+                                $rr = Net::DNS::RR->new(
                                     name  => "$c.$d",
                                     ttl   => 60 * 60 * 24,
                                     type  => 'CNAME',
@@ -272,7 +272,7 @@ for my $h ( sort keys %hosts ) {
                                 $a{ $rr->owner } = $a{ $rr->cname };
                                 $output{$d}{ $rr->string }++;
                             }
-                            $rr = new Net::DNS::RR(
+                            $rr = Net::DNS::RR->new(
                                 owner   => "$c.$d",
                                 ttl     => 60 * 60 * 24,
                                 type    => 'A',
@@ -294,7 +294,7 @@ for my $h ( sort keys %hosts ) {
 for my $p ( keys %pick ) {
     my $s = $pick{$p};
     if (0) {
-        my $rr = new Net::DNS::RR(
+        my $rr = Net::DNS::RR->new(
             name  => "$p.$internal_domain",
             ttl   => 60 * 60 * 24,
             type  => 'CNAME',
@@ -303,7 +303,7 @@ for my $p ( keys %pick ) {
         $a{ $rr->owner } = $a{ $rr->cname };
         $output{$internal_domain}{ $rr->string }++;
     }
-    my $rr = new Net::DNS::RR(
+    my $rr = Net::DNS::RR->new(
         owner   => "$p.$internal_domain",
         ttl     => 60 * 60 * 24,
         type    => 'A',
@@ -321,19 +321,19 @@ sub bind_list(@) {
 }
 
 my $confm = "$internal_domain-zones.conf";
-open CONFMASTER, '>', $confm or die "$confm: $!";
+open my $CONFMASTER, '>', $confm or die "$confm: $!";
 my @files_master = $confm;
 my $confs        = "$confm.tmp";
-open CONFSLAVE, '>', $confs or die "$confs: $!";
+open my $CONFSLAVE, '>', $confs or die "$confs: $!";
 my @files_slave = $confs;
-my $CONF        = IO::Tee->new( \*CONFMASTER, \*CONFSLAVE );
+my $CONF        = IO::Tee->new( $CONFMASTER, $CONFSLAVE );
 
 my %own;
 for my $a ( values %a ) {
     $own{$a}++;
 }
-my @own  = map { new NetAddr::IP($_) } keys %own;
-my $priv = bind_list @priv, new NetAddr::IP('127/8'), @own;
+my @own  = map { NetAddr::IP( $_->new ) } keys %own;
+my $priv = bind_list @priv, NetAddr::IP->new('127/8'), @own;
 my $ext  = bind_list qw( 0.0.0.0/0 );
 print $CONF <<EOF;
 
@@ -348,9 +348,9 @@ $res->debug(1);
 for my $z ( map { scalar reverse } sort map { scalar reverse } keys %output ) {
     my $zone = "$z.zone";
     print "# $zone ";
-    open ZONE, '>', $zone or die "$zone: $!";
+    open my $ZONE, '>', $zone or die "$zone: $!";
     push @files_master, $zone;
-    print ZONE "; $zone\n";
+    print $ZONE "; $zone\n";
     my $serial;
     my $reply = $res->query( $z . '.', 'SOA' );
     if ($reply) {
@@ -372,7 +372,7 @@ for my $z ( map { scalar reverse } sort map { scalar reverse } keys %output ) {
         #$msg =~ tr/\n / /s;
         print $msg, ' ';
     }
-    my $rr = new Net::DNS::RR(
+    my $rr = Net::DNS::RR->new(
         mname   => $nse[0],
         rname   => $responsible,
         serial  => $serial,
@@ -385,11 +385,11 @@ for my $z ( map { scalar reverse } sort map { scalar reverse } keys %output ) {
         owner   => $z,
     );
     $rr->serial( $rr->serial(YYYYMMDDxx) );
-    print "new serial=", $rr->serial, "\n";
+    print "serial->new=", $rr->serial, "\n";
 
     #$output{$z}{$rr->string}++;
-    print ZONE "\n";
-    print ZONE $rr->string, "\n";
+    print $ZONE "\n";
+    print $ZONE $rr->string, "\n";
     my @z   = split /\./, $z;
     my $top = pop @z;
     print Dumper( $z, @z, $top, $internal_domain );
@@ -402,26 +402,26 @@ for my $z ( map { scalar reverse } sort map { scalar reverse } keys %output ) {
     }
     print Dumper(@ns);
     for my $ns (@ns) {
-        my $rr = new Net::DNS::RR(
+        my $rr = Net::DNS::RR->new(
             nsdname => $ns,
             type    => 'NS',
             owner   => $z,
         );
 
         #$output{$z}{$rr->string}++;
-        print ZONE $rr->string, "\n";
+        print $ZONE $rr->string, "\n";
     }
     for my $rr ( sort keys %{ $output{$z} } ) {
-        print ZONE $rr, "\n";
+        print $ZONE $rr, "\n";
     }
-    print ZONE "\n";
-    close ZONE or die "$zone: $!";
+    print $ZONE "\n";
+    close $ZONE or die "$zone: $!";
     my @aq = qw( internal );
     push @aq, qw( external ) if $external_domains{$z};
     my $aq = bind_list @aq;
     my $an = bind_list( $a{$slave} );
     print Dumper($an);
-    print CONFMASTER <<EOF;
+    print $CONFMASTER <<EOF;
 
 zone "$z" {
 	type master;
@@ -462,7 +462,7 @@ EOF
         }
     }
     my $at = bind_list qw( internal ), @nsa;
-    print CONFSLAVE <<EOF;
+    print $CONFSLAVE <<EOF;
 
 zone "$z" {
 	type slave;
@@ -485,28 +485,26 @@ for my $s ( @{ $network{slaves}{zone} } ) {
             my $r2 = $res->query( $n . '.', 'A' );
             if ($r2) {
                 foreach my $rr2 ( $r2->answer ) {
-                    given ( $rr2->type ) {
-                        when ('A') {
-                            my $a = $rr2->address;
-                            push @ns, $a;
-                        }
-                        when ('CNAME') {
-                            my $r3 = $res->query( $rr2->cname . '.', 'A' );
-                            foreach my $rr3 ( $r3->answer ) {
-                                given ( $rr3->type ) {
-                                    when ('A') {
-                                        my $a = $rr3->address;
-                                        push @ns, $a;
-                                    }
-                                    default {
-                                        die "Bad type '$_'";
-                                    }
-                                }
+                    my $type = $rr2->type;
+                    if ( $type eq 'A' ) {
+                        my $a = $rr2->address;
+                        push @ns, $a;
+                    }
+                    elsif ( $type eq 'CNAME' ) {
+                        my $r3 = $res->query( $rr2->cname . '.', 'A' );
+                        foreach my $rr3 ( $r3->answer ) {
+                            my $type3 = $rr3->type;
+                            if ( $type3 eq 'A' ) {
+                                my $a = $rr3->address;
+                                push @ns, $a;
+                            }
+                            else {
+                                die "Bad type '$type3'";
                             }
                         }
-                        default {
-                            die "Bad type '$_'";
-                        }
+                    }
+                    else {
+                        die "Bad type '$type'";
                     }
                 }
             }
@@ -557,8 +555,8 @@ EOF
     }
 }
 $CONF->flush;
-close CONFMASTER or die "$confm: $!";
-close CONFSLAVE  or die "$confs: $!";
+close $CONFMASTER or die "$confm: $!";
+close $CONFSLAVE  or die "$confs: $!";
 
 #close $CONF or die "Tee: $!";
 print "\n";
