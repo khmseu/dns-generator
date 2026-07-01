@@ -1,4 +1,16 @@
 #! /usr/bin/perl
+
+=head1 NAME
+
+generator - BIND DNS zone file and configuration generator
+
+=head1 DESCRIPTION
+
+Generates BIND DNS zone files and configuration from network.ini.
+Processes host and subnet definitions to create A, AAAA, PTR, CNAME, SOA, and NS records.
+
+=cut
+
 use 5.026;
 use strict;
 use autodie  qw( :all );
@@ -22,11 +34,16 @@ use Net::DNS;
 use NetAddr::IP;
 use NetAddr::IP::Util qw(:all);
 
-# network.ini Format:
-#
+# ============================================================================
+# Constants and configuration
+# ============================================================================
 
 use constant EXTERN  => 'EXTERN';
 use constant members => 'members';
+
+# ============================================================================
+# IPv4 Utility Functions
+# ============================================================================
 
 sub addv4($$) {
     my ( $a, $b ) = @_;
@@ -52,7 +69,11 @@ sub shiftv4($$) {
 my $network = Config::IniFiles->new( -file => "network.ini", -allowcontinue => 1, -nomultiline => 1 )
   or die +Dumper(@Config::IniFiles::errors) . " ";
 
-# Rewrite in canonical format
+# ============================================================================
+# Load and parse network.ini configuration
+# ============================================================================
+
+# Rewrite configuration in canonical format (expand multi-value parameters)
 for my $s ( $network->Sections ) {
     for my $p ( $network->Parameters($s) ) {
         my @vals = $network->val( $s, $p );
@@ -62,7 +83,11 @@ for my $s ( $network->Sections ) {
 
 $network->RewriteConfig;
 
-# Retrieve into a more convenient datastructure
+# ============================================================================
+# Transform configuration into convenient data structures
+# ============================================================================
+
+# Parse into nested hash for easier access
 my %network;
 my %many;
 for my $s ( $network->Sections ) {
@@ -75,7 +100,10 @@ for my $s ( $network->Sections ) {
     }
 }
 
-# Build network objects
+# ============================================================================
+# Build network and host objects
+# ============================================================================
+
 my %hosts;
 for my $h ( keys %{ $network{hosts} } ) {
     $hosts{$h}{num}  = $network{hosts}{$h}[0] + 0;
@@ -142,9 +170,16 @@ print Dumper(
     $internal_domain, $ipv4base, $ipv4base4, %external_subnets
 );
 
-my %output;
+# ============================================================================
+# DNS record generation
+# ============================================================================
+
+my %output;    # Hash to store generated DNS records organized by zone
 
 sub add_more($$$) {
+
+    # Add additional DNS records from the 'more' section of config
+    # $name: record name, $origin: zone origin, $ext: external flag
     my ( $name, $origin, $ext ) = @_;
     for my $r ( @{ $network{more}{records} } ) {
         my $data = $network{more}{$r};
@@ -237,7 +272,7 @@ for my $h ( sort keys %hosts ) {
                 $output{$d}{ $rr->string }++;
                 add_more "$h.$d", $d, 1;
                 if (1) {
-                    my $q = Net::DNS::Question( $ip->new );
+                    my $q = Net::DNS::Question->new($ip);
                     $rr = Net::DNS::RR->new(
                         ptrdname => "$h.$d",
                         ttl      => 60 * 60 * 24,
@@ -315,11 +350,18 @@ for my $p ( keys %pick ) {
 }
 print Dumper( %output, %a );
 
+# ============================================================================
+# BIND configuration output
+# ============================================================================
+
 sub bind_list(@) {
+
+    # Format IP list for BIND ACL syntax
     my $str = join( '; ', sort(@_), '' );
     return "{ $str};";
 }
 
+# Create BIND configuration files
 my $confm = "$internal_domain-zones.conf";
 open my $CONFMASTER, '>', $confm or die "$confm: $!";
 my @files_master = $confm;
@@ -332,7 +374,7 @@ my %own;
 for my $a ( values %a ) {
     $own{$a}++;
 }
-my @own  = map { NetAddr::IP( $_->new ) } keys %own;
+my @own  = map { NetAddr::IP->new($_) } keys %own;
 my $priv = bind_list @priv, NetAddr::IP->new('127/8'), @own;
 my $ext  = bind_list qw( 0.0.0.0/0 );
 print $CONF <<EOF;
@@ -345,15 +387,23 @@ $CONF->flush;
 my $res = Net::DNS::Resolver->new;
 $res->debug(1);
 
+# ============================================================================
+# Zone file generation and serial number management
+# ============================================================================
+
 for my $z ( map { scalar reverse } sort map { scalar reverse } keys %output ) {
     my $zone = "$z.zone";
     print "# $zone ";
     open my $ZONE, '>', $zone or die "$zone: $!";
     push @files_master, $zone;
     print $ZONE "; $zone\n";
+
+    # Query existing SOA record to preserve and increment serial number
     my $serial;
     my $reply = $res->query( $z . '.', 'SOA' );
     if ($reply) {
+
+        # Extract serial from existing SOA record
         foreach my $rr ( $reply->answer ) {
             $serial = $rr->serial;
             print "serial=$serial\n";
@@ -361,7 +411,7 @@ for my $z ( map { scalar reverse } sort map { scalar reverse } keys %output ) {
             print "rname=", $rr->rname, "\n";
         }
     }
-    else {
+    else {    # SOA query failed - log the error
         my $msg =
             "query ($z SOA [serial]) failed: "
           . $res->errorstring
@@ -384,20 +434,25 @@ for my $z ( map { scalar reverse } sort map { scalar reverse } keys %output ) {
         type    => 'SOA',
         owner   => $z,
     );
-    $rr->serial( $rr->serial(YYYYMMDDxx) );
+    $rr->serial( $rr->serial('YYYYMMDDxx') );
     print "serial->new=", $rr->serial, "\n";
 
     #$output{$z}{$rr->string}++;
     print $ZONE "\n";
     print $ZONE $rr->string, "\n";
+
+    # Determine which nameservers to use (internal or external)
     my @z   = split /\./, $z;
     my $top = pop @z;
     print Dumper( $z, @z, $top, $internal_domain );
     my @ns;
     if ( $top eq $internal_domain or $top eq 'arpa' ) {
+
+        # Use internal nameservers for internal zones
         @ns = @nsi;
     }
     else {
+        # Use external nameservers for external zones
         @ns = @nse;
     }
     print Dumper(@ns);
@@ -416,6 +471,8 @@ for my $z ( map { scalar reverse } sort map { scalar reverse } keys %output ) {
     }
     print $ZONE "\n";
     close $ZONE or die "$zone: $!";
+
+    # Configure zone for both master and slave servers
     my @aq = qw( internal );
     push @aq, qw( external ) if $external_domains{$z};
     my $aq = bind_list @aq;
