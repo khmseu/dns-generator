@@ -705,18 +705,32 @@ EOF
 
     #close $CONF or die "Tee: $!";
     print "\n";
-    print "master <- ", join( ' ', @files_master ), "\n";
-    if (1) {
-        system( qw(cp -av), @files_master, qw(..) ) == 0 or die "cp: !=$! ?=$?";
-        system(qw(systemctl restart bind9));
-        system(qw(systemctl status bind9));
-        print "slave <- ", join( ' ', @files_slave ), "\n";
-        system( qw(scp -pr), @files_slave, "$addr_map{$slave}:/etc/bind/" );
-        system( qw(ssh), $addr_map{$slave}, qw(cmp -s), "/etc/bind/$confs", "/etc/bind/$confm",
-            qw(|| mv -v --backup=numbered),
-            "/etc/bind/$confs", "/etc/bind/$confm" );
-        system( qw(ssh), $addr_map{$slave}, qw(systemctl restart bind9) );
-        system( qw(ssh), $addr_map{$slave}, qw(systemctl status bind9) );
+    print "Generated files (master):\n";
+    print "  ", join( "\n  ", @files_master ), "\n";
+    print "\n";
+    print "Generated files (slave):\n";
+    print "  ", join( "\n  ", @files_slave ), "\n";
+
+    # ========================================================================
+    # Deploy generated files using sudo script
+    # ========================================================================
+
+    # Prompt user to run deployment script
+    print "\n";
+    print "========================================\n";
+    print "To deploy these files, run:\n";
+    print "  sudo ./deploy-zones.sh ", join( ' ', @files_master ), "\n";
+    print "========================================\n";
+
+    # Attempt deployment if script exists and is executable
+    if ( -x './deploy-zones.sh' ) {
+        print "\nAttempting automatic deployment...\n";
+        my $deploy_cmd = 'sudo ./deploy-zones.sh ' . join( ' ', @files_master );
+        system($deploy_cmd);
+    }
+    else {
+        print "Deploy script (deploy-zones.sh) not found or not executable.\n";
+        print "Please run the command above manually.\n";
     }
 
 }    # End of main()
