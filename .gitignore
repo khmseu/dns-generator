@@ -1,8 +1,8 @@
-
 # this repo
+*.tmp
+.*.swp
 .vscode/perl-lang
 a/
 attrs
-khms-zones.conf.tmp
 l
 network-old.ini

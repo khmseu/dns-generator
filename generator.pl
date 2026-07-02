@@ -717,8 +717,9 @@ EOF
 
     # Build deployment command with optional slave parameters
     my @deploy_cmd_args = @files_master;
-    
+
     if ( @files_slave && $slave && $addr_map{$slave} ) {
+
         # Add slave deployment parameters
         push @deploy_cmd_args, '--', $addr_map{$slave}, @files_slave;
     }

@@ -99,6 +99,10 @@ if [[ -n ${SLAVE_IP} && -n ${SLAVE_CONFIG} ]]; then
 		"cmp -s /etc/bind/${SLAVE_BASENAME} /etc/bind/${MASTER_BASENAME} || \
          mv -v --backup=numbered /etc/bind/${SLAVE_BASENAME} /etc/bind/${MASTER_BASENAME}"
 
+	echo "Waiting for zone transfers to persist to disk (120 seconds)..."
+	echo "  This allows BIND to download and save transferred zones before restart"
+	sleep 120
+
 	echo "Restarting BIND9 on slave..."
 	ssh "root@${SLAVE_IP}" systemctl restart bind9
 	ssh "root@${SLAVE_IP}" systemctl status bind9
