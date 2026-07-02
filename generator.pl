@@ -66,7 +66,8 @@ sub shiftv4($$) {
     return $result;
 }
 
-my $network = Config::IniFiles->new( -file => "network.ini", -allowcontinue => 1, -nomultiline => 1 )
+my $network =
+  Config::IniFiles->new( -file => "network.ini", -allowcontinue => 1, -nomultiline => 1, -allowedcommentchars => '#' )
   or die +Dumper(@Config::IniFiles::errors) . " ";
 
 # ============================================================================
@@ -74,7 +75,9 @@ my $network = Config::IniFiles->new( -file => "network.ini", -allowcontinue => 1
 # ============================================================================
 
 # Rewrite configuration in canonical format (expand multi-value parameters)
+# Skip zone_records section which contains values that should not be split on whitespace
 for my $section_name ( $network->Sections ) {
+    next if $section_name eq 'zone_records';
     for my $param_name ( $network->Parameters($section_name) ) {
         my @param_values = $network->val( $section_name, $param_name );
         $network->newval( $section_name, $param_name, map { split } @param_values );
