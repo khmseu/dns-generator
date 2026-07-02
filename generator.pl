@@ -120,25 +120,42 @@ sub add_more($$$) {
 sub add_zone_records($) {
 
     # Add zone-level DNS records from the 'zone_records' section of config.
-    # ... (rest of comments)
+    # Unlike add_more (which stamps a record onto every host), this adds one
+    # record per zone at a fixed owner name (zone apex or a named prefix).
+    #
+    # Format in network.ini:
+    #   [zone_records]
+    #   records=spf dmarc dkim_sel1
+    #   spf=ext|@|TXT|v=spf1 mx -all
+    #   dmarc=ext|_dmarc|TXT|v=DMARC1; p=none; rua=mailto:dmarc@$
+    #   dkim_sel1=ext|sel1._domainkey|TXT|v=DKIM1; k=rsa; p=MIIB...
+    #
+    # scope:  ext  => external domains only (@external_domains)
+    #         int  => internal domain only  ($internal_domain)
+    #         all  => every zone including reverse
+    # owner:  @    => zone apex
+    #         else => prefix prepended to zone name
+    # type:   any DNS record type (TXT, CAA, SSHFP, ...)
+    # rdata:  record data; $ expands to the zone name
 
     my ($zone_name) = @_;
 
     # Early exit if zone_records not available
-    unless (exists $network{zone_records} && defined $network{zone_records}{records}) {
+    unless ( exists $network{zone_records} && defined $network{zone_records}{records} ) {
         return;
     }
 
     my $zone_is_external = exists $external_domains{$zone_name};
     my $zone_is_internal = ( $zone_name eq $internal_domain );
 
-    my @record_keys = @{$network{zone_records}{records}};
+    my @record_keys = @{ $network{zone_records}{records} };
 
     for my $record_key (@record_keys) {
         next unless exists $network{zone_records}{$record_key};
         next if $record_key eq 'records';    # Skip the records list itself
 
         my $record_value = $network{zone_records}{$record_key};
+
         # Values are stored as arrays, get first element
         $record_value = $record_value->[0] if ref($record_value) eq 'ARRAY';
         next unless defined $record_value && $record_value =~ /\|/;
@@ -458,7 +475,7 @@ sub main() {
     # ============================================================================
     # Zone-level record generation (SPF, DKIM, DMARC, etc.)
     # ============================================================================
-    
+
     # Ensure all zones (including external) are in %output hash
     for my $zone_name (@external_domains) {
         $output{$zone_name} //= {};
