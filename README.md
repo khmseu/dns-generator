@@ -72,7 +72,7 @@ See [Deployment Guide](README-deployment.md) for detailed instructions.
 
 ## Project Structure
 
-```
+```text
 /etc/bind/generator/
 ├── generator.pl                # Main DNS generator (Perl)
 ├── deploy-zones.sh             # Deployment script (Bash, requires sudo)
@@ -89,20 +89,20 @@ See [Deployment Guide](README-deployment.md) for detailed instructions.
 
 ### network.ini Sections
 
-| Section | Purpose |
-|---------|---------|
-| `[hosts]` | Define host numbers (numeric identifiers) |
-| `[subnets]` | Define subnets with CIDR ranges |
-| `[domains]` | Configure external/internal domains |
-| `[networks]` | Network-wide settings (IPv4, admin email, nameservers) |
-| `[more]` | Per-host record templates (MX, SOA, etc.) |
-| `[zone_records]` | Zone-level records (SPF, DMARC, DKIM) |
+| Section          | Purpose                                                |
+| ---------------- | ------------------------------------------------------ |
+| `[hosts]`        | Define host numbers (numeric identifiers)              |
+| `[subnets]`      | Define subnets with CIDR ranges                        |
+| `[domains]`      | Configure external/internal domains                    |
+| `[networks]`     | Network-wide settings (IPv4, admin email, nameservers) |
+| `[more]`         | Per-host record templates (MX, SOA, etc.)              |
+| `[zone_records]` | Zone-level records (SPF, DMARC, DKIM)                  |
 
 ### Zone Record Format
 
 Zone-level records use the format:
 
-```
+```text
 key=scope|owner|type|rdata
 ```
 
@@ -154,7 +154,7 @@ dkim_2024=ext|2024._domainkey|TXT|v=DKIM1; k=rsa; p=MIIBIj...
 
 ## Deployment Architecture
 
-```
+```text
 ┌─────────────────────────────┐
 │  Unprivileged User          │
 │  ┌─────────────────────────┐│
