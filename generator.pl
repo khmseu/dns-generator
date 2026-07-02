@@ -186,10 +186,10 @@ sub add_more($$$) {
         my $record_data = $network{more}{$record_type};
         my @data_fields = split /:/, $record_data->[0];
         if ($is_external) {
-            @data_fields = map { my $field = $_; $field =~ s/\$/\$origin/g; $field } @data_fields;
+            @data_fields = map { my $field = $_; $field =~ s/\$/$origin/g; $field } @data_fields;
         }
         else {
-            @data_fields = map { my $field = $_; $field =~ s/\$/\$internal_domain/g; $field } @data_fields;
+            @data_fields = map { my $field = $_; $field =~ s/\$/$internal_domain/g; $field } @data_fields;
         }
 
         #print Dumper($record_data, @data_fields);
