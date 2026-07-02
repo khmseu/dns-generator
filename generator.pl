@@ -438,7 +438,7 @@ for my $zone_name ( map { scalar reverse } sort map { scalar reverse } keys %out
         type    => 'SOA',
         owner   => $zone_name,
     );
-    $record_obj->serial( $record_obj->serial('YYYYMMDDxx') );
+    $record_obj->serial( $record_obj->serial(YYYYMMDDxx) );
     print "serial->new=", $record_obj->serial, "\n";
 
     #$output{$zone_name}{$record_obj->string}++;
