@@ -66,109 +66,34 @@ sub shiftv4($$) {
     return $result;
 }
 
-my $network =
-  Config::IniFiles->new( -file => "network.ini", -allowcontinue => 1, -nomultiline => 1, -allowedcommentchars => '#' )
-  or die +Dumper(@Config::IniFiles::errors) . " ";
-
 # ============================================================================
-# Load and parse network.ini configuration
+# Global variables for configuration and DNS records
 # ============================================================================
 
-$network->RewriteConfig;
-
-# ============================================================================
-# Transform configuration into convenient data structures
-# ============================================================================
-
-# Parse into nested hash for easier access
+my $network;
 my %network;
 my %many;
-for my $section_name ( $network->Sections ) {
-    for my $param_name ( $network->Parameters($section_name) ) {
-        my @param_values = $network->val( $section_name, $param_name );
-        $network{$section_name}{$param_name} = [@param_values];
-        if ( 2 <= @param_values ) {
-            $many{$param_name}++;
-        }
-    }
-}
-
-# ============================================================================
-# Build network and host objects
-# ============================================================================
-
 my %hosts;
-for my $hostname ( keys %{ $network{hosts} } ) {
-    $hosts{$hostname}{num}  = $network{hosts}{$hostname}[0] + 0;
-    $hosts{$hostname}{num4} = inet_aton( $hosts{$hostname}{num} );
-}
 my %subnets;
-for my $subnet_name ( keys %{ $network{subnets} } ) {
-    my $subnet_value = $network{subnets}{$subnet_name}[0];
-    if ( $subnet_value eq EXTERN ) {
-        my %subnet_temp;
-        for my $param_name ( keys %{ $network{$subnet_name} } ) {
-            if ( $param_name eq members ) {
-                $subnet_temp{$param_name} = [ @{ $network{$subnet_name}{$param_name} } ];
-            }
-            else {
-                $subnet_temp{$param_name} = $network{$subnet_name}{$param_name}[0];
-            }
-        }
-        $subnets{$subnet_name} = {%subnet_temp};
-    }
-    else {
-        $subnets{$subnet_name}{num} = $subnet_value + 0;
-
-        #print Dumper($subnet_name,$subnet_value);
-        my $members_list = $network{$subnet_name}{ +members };
-        $subnets{$subnet_name}{ +members } = [ $members_list ? @{$members_list} : () ];
-        $subnets{$subnet_name}{num4} = shiftv4( inet_aton( $subnets{$subnet_name}{num} ), 8 );
-    }
-}
-my @external_domains   = @{ $network{domains}{extern} };
-my %external_domains   = map { ( $_ => 1 ) } @external_domains;
-my %externally_visible = map { /=/ ? ( split /=/, $_, 2 ) : ( $_ => 0 ) } @{ $network{domains}{visible} };
-my %pick               = map { ( split /=/, $_, 2 ) } @{ $network{domains}{pick} };
-my $internal_domain    = $network{domains}{intern}[0];
-my $ipv4base           = $network{networks}{ipv4}[0];
-my $ipv4base4          = inet_aton($ipv4base);
-my $responsible        = $network{networks}{admin}[0];
-$responsible =~ tr/\@/./;
-my @external_nameservers = @{ $network{networks}{ns_extern} };
-my $master               = $network{networks}{ns_intern_master}[0];
-my $slave                = $network{networks}{ns_intern_slave}[0];
-my @internal_nameservers = ( $master, $slave );
-
+my @external_domains;
+my %external_domains;
+my %externally_visible;
+my %pick;
+my $internal_domain;
+my $ipv4base;
+my $ipv4base4;
+my $responsible;
+my @external_nameservers;
+my $master;
+my $slave;
+my @internal_nameservers;
 my %external_subnets;
-for my $subnet_name ( keys %subnets ) {
-    my $current_net;
-    if ( exists $subnets{$subnet_name}{num4} ) {
-        $current_net = addv4 $subnets{$subnet_name}{num4}, $ipv4base4;
-    }
-    for my $hostname ( @{ $subnets{$subnet_name}{ +members } } ) {
-        if ( defined $current_net ) {
-            $hosts{$hostname}{net4}{$subnet_name} = addv4 $current_net, $hosts{$hostname}{num4};
-        }
-        else {
-            $hosts{$hostname}{net4}{$subnet_name} = inet_aton( $subnets{$subnet_name}{$hostname} )
-              if exists $subnets{$subnet_name}{$hostname};
-            $external_subnets{$subnet_name}{$hostname}++;
-        }
-    }
-}
-
-# print Dumper(%network, %many, %hosts, %subnets, @external_domains, @externally_visible, $internal_domain, $ipv4base);
-print Dumper(
-    %network,         %hosts,    %subnets,   @external_domains, %externally_visible,
-    $internal_domain, $ipv4base, $ipv4base4, %external_subnets
-);
-
-# ============================================================================
-# DNS record generation
-# ============================================================================
-
 my %output;    # Hash to store generated DNS records organized by zone
+my %addr_map;
+my $confm;
+my $confs;
+my $CONF;
+my $res;
 
 sub add_more($$$) {
 
@@ -266,10 +191,123 @@ sub is_priv($) {
     return undef;
 }
 
-my %addr_map;
+sub bind_list(@) {
 
-for my $hostname ( sort keys %hosts ) {
-    for my $subnet_name ( sort keys %{ $hosts{$hostname}{net4} } ) {
+    # Format IP list for BIND ACL syntax
+    my $str = join( '; ', sort(@_), '' );
+    return "{ $str};";
+}
+
+# ============================================================================
+# Main application logic
+# ============================================================================
+
+sub main() {
+
+    # ========================================================================
+    # Load and parse network.ini configuration
+    # ========================================================================
+
+    $network = Config::IniFiles->new(
+        -file                => "network.ini",
+        -allowcontinue       => 1,
+        -nomultiline         => 1,
+        -allowedcommentchars => '#'
+    ) or die +Dumper(@Config::IniFiles::errors) . " ";
+
+    $network->RewriteConfig;
+
+    # ========================================================================
+    # Transform configuration into convenient data structures
+    # ========================================================================
+
+    # Parse into nested hash for easier access
+    for my $section_name ( $network->Sections ) {
+        for my $param_name ( $network->Parameters($section_name) ) {
+            my @param_values = $network->val( $section_name, $param_name );
+            $network{$section_name}{$param_name} = [@param_values];
+            if ( 2 <= @param_values ) {
+                $many{$param_name}++;
+            }
+        }
+    }
+
+    # ========================================================================
+    # Build network and host objects
+    # ========================================================================
+
+    for my $hostname ( keys %{ $network{hosts} } ) {
+        $hosts{$hostname}{num}  = $network{hosts}{$hostname}[0] + 0;
+        $hosts{$hostname}{num4} = inet_aton( $hosts{$hostname}{num} );
+    }
+
+    for my $subnet_name ( keys %{ $network{subnets} } ) {
+        my $subnet_value = $network{subnets}{$subnet_name}[0];
+        if ( $subnet_value eq EXTERN ) {
+            my %subnet_temp;
+            for my $param_name ( keys %{ $network{$subnet_name} } ) {
+                if ( $param_name eq members ) {
+                    $subnet_temp{$param_name} = [ @{ $network{$subnet_name}{$param_name} } ];
+                }
+                else {
+                    $subnet_temp{$param_name} = $network{$subnet_name}{$param_name}[0];
+                }
+            }
+            $subnets{$subnet_name} = {%subnet_temp};
+        }
+        else {
+            $subnets{$subnet_name}{num} = $subnet_value + 0;
+
+            #print Dumper($subnet_name,$subnet_value);
+            my $members_list = $network{$subnet_name}{ +members };
+            $subnets{$subnet_name}{ +members } = [ $members_list ? @{$members_list} : () ];
+            $subnets{$subnet_name}{num4} = shiftv4( inet_aton( $subnets{$subnet_name}{num} ), 8 );
+        }
+    }
+
+    @external_domains   = @{ $network{domains}{extern} };
+    %external_domains   = map { ( $_ => 1 ) } @external_domains;
+    %externally_visible = map { /=/ ? ( split /=/, $_, 2 ) : ( $_ => 0 ) } @{ $network{domains}{visible} };
+    %pick               = map { ( split /=/, $_, 2 ) } @{ $network{domains}{pick} };
+    $internal_domain    = $network{domains}{intern}[0];
+    $ipv4base           = $network{networks}{ipv4}[0];
+    $ipv4base4          = inet_aton($ipv4base);
+    $responsible        = $network{networks}{admin}[0];
+    $responsible =~ tr/\@/./;
+    @external_nameservers = @{ $network{networks}{ns_extern} };
+    $master               = $network{networks}{ns_intern_master}[0];
+    $slave                = $network{networks}{ns_intern_slave}[0];
+    @internal_nameservers = ( $master, $slave );
+
+    for my $subnet_name ( keys %subnets ) {
+        my $current_net;
+        if ( exists $subnets{$subnet_name}{num4} ) {
+            $current_net = addv4 $subnets{$subnet_name}{num4}, $ipv4base4;
+        }
+        for my $hostname ( @{ $subnets{$subnet_name}{ +members } } ) {
+            if ( defined $current_net ) {
+                $hosts{$hostname}{net4}{$subnet_name} = addv4 $current_net, $hosts{$hostname}{num4};
+            }
+            else {
+                $hosts{$hostname}{net4}{$subnet_name} = inet_aton( $subnets{$subnet_name}{$hostname} )
+                  if exists $subnets{$subnet_name}{$hostname};
+                $external_subnets{$subnet_name}{$hostname}++;
+            }
+        }
+    }
+
+    # print Dumper(%network, %many, %hosts, %subnets, @external_domains, @externally_visible, $internal_domain, $ipv4base);
+    print Dumper(
+        %network,         %hosts,    %subnets,   @external_domains, %externally_visible,
+        $internal_domain, $ipv4base, $ipv4base4, %external_subnets
+    );
+
+    # ========================================================================
+    # DNS record generation
+    # ========================================================================
+
+    for my $hostname ( sort keys %hosts ) {
+        for my $subnet_name ( sort keys %{ $hosts{$hostname}{net4} } ) {
         my $ip_address = inet_ntoa( $hosts{$hostname}{net4}{$subnet_name} );
         my $record_obj = Net::DNS::RR->new(
             owner   => "$hostname.$subnet_name.$internal_domain",
@@ -410,13 +448,6 @@ print Dumper( %output, %addr_map );
 # ============================================================================
 # BIND configuration output
 # ============================================================================
-
-sub bind_list(@) {
-
-    # Format IP list for BIND ACL syntax
-    my $str = join( '; ', sort(@_), '' );
-    return "{ $str};";
-}
 
 # Create BIND configuration files
 my $confm = "$internal_domain-zones.conf";
@@ -687,6 +718,15 @@ if (1) {
     system( qw(ssh), $addr_map{$slave}, qw(systemctl restart bind9) );
     system( qw(ssh), $addr_map{$slave}, qw(systemctl status bind9) );
 }
+
+}    # End of main()
+
+# ============================================================================
+# Run main application
+# ============================================================================
+
+main();
+
 __END__
 # khms1.de                IN SOA  ns0.khms.eu. root.khms1.de. (
 # 2018012806 ; serial
