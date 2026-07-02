@@ -74,17 +74,7 @@ my $network =
 # Load and parse network.ini configuration
 # ============================================================================
 
-# Rewrite configuration in canonical format (expand multi-value parameters)
-# Skip zone_records section which contains values that should not be split on whitespace
-for my $section_name ( $network->Sections ) {
-    next if $section_name eq 'zone_records';
-    for my $param_name ( $network->Parameters($section_name) ) {
-        my @param_values = $network->val( $section_name, $param_name );
-        $network->newval( $section_name, $param_name, map { split } @param_values );
-    }
-}
 
-$network->RewriteConfig;
 
 # ============================================================================
 # Transform configuration into convenient data structures
