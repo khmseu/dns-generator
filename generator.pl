@@ -147,7 +147,7 @@ sub add_zone_records($) {
 
     for my $record_key ( @{ $network{zone_records}{records} } ) {
         next unless exists $network{zone_records}{$record_key};
-        next if $record_key eq 'records';  # Skip the records list itself
+        next if $record_key eq 'records';    # Skip the records list itself
 
         my ( $scope, $owner_prefix, $rtype, $rdata ) =
           split /\|/, $network{zone_records}{$record_key}, 4;
@@ -158,21 +158,25 @@ sub add_zone_records($) {
         $rdata =~ s/\$/$zone_name/g;
 
         my $full_owner = ( $owner_prefix eq '@' ) ? $zone_name : "$owner_prefix.$zone_name";
+
         # Ensure owner name ends with dot for BIND zone files
         $full_owner .= '.' unless $full_owner =~ /\.$/;
 
         # For TXT records, build manually without wrapping long lines
         my $record_str;
         if ( $rtype eq 'TXT' ) {
+
             # For very long TXT records (DKIM, etc), split into chunks
             # BIND can handle multi-line TXT with continuation in parentheses
             my @chunks = $rdata =~ /(.{1,255})/g;
             my $data_str;
-            if (@chunks > 1) {
+            if ( @chunks > 1 ) {
+
                 # Multi-chunk: use BIND continuation format
-                $data_str = "( \"" . join("\" \"", @chunks) . "\" )";
+                $data_str   = "( \"" . join( "\" \"", @chunks ) . "\" )";
                 $record_str = qq{$full_owner\t86400\tIN\t$rtype\t$data_str};
-            } else {
+            }
+            else {
                 # Single chunk: simple format
                 $record_str = qq{$full_owner\t86400\tIN\t$rtype\t"$rdata"};
             }

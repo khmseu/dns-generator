@@ -10,23 +10,16 @@ khms1.de.	86400	IN	SOA	( ns0.khms1.de. root.khms1.de.
 khms1.de.	IN	NS	ns0.khms1.de.
 khms1.de.	IN	NS	ns1.first-ns.de.
 khms1.de.	IN	NS	robotns2.second-ns.de.
-_dmarc.khms1.de.	86400	IN	TXT	(
-	"v=DMARC1; p=none; rua=mailto:kai.extern+rua@gmail.com ruf=kai.extern+ruf@gmail.com"
-	)
-desktop_1._domainkey.khms1.de.	86400	IN	TXT	(
-	"v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr1tkbQWCmoLxa6/3cbZbW0pVH/EtqGP24Qvb08WfncSH+cI37oTJFcxScJNGjfPaVnY46NhJkb2cAgvCcGWrcZIYjax59BmmkWNzf73iV3ukR05WeE83SwL/X82CqY7edDmiS+Sbj2im601WbZKFC6FNmLM0FUUVovqIK57jES7jHubzaBnA8jLpqxIQ7RUaf8u7t1mmK0JBi6sg0JBIgwcugIpBFUQd4gHsiMmW5dYIFvK68uCRvypIYC74IqJjDEcWjrKBvGAlC4SZpRPPSKfZ0Z858BLiyvd1K8eTlTNpQIrhZC9EDheUKiYE3j6TyR4+XepKV0E2MndVONwgywIDAQAB"
-	)
+_dmarc.khms1.de.	86400	IN	TXT	"v=DMARC1; p=none; rua=mailto:kai.extern+rua@gmail.com ruf=kai.extern+ruf@gmail.com"
+desktop_1._domainkey.khms1.de.	86400	IN	TXT	( "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr1tkbQWCmoLxa6/3cbZbW0pVH/EtqGP24Qvb08WfncSH+cI37oTJFcxScJNGjfPaVnY46NhJkb2cAgvCcGWrcZIYjax59BmmkWNzf73iV3ukR05WeE83SwL/X82CqY7edDmiS+Sbj2im601WbZKFC6FNmLM0FUUVovqIK57jES7jHubzaBnA8jLpqxIQ7RUaf" "8u7t1mmK0JBi6sg0JBIgwcugIpBFUQd4gHsiMmW5dYIFvK68uCRvypIYC74IqJjDEcWjrKBvGAlC4SZpRPPSKfZ0Z858BLiyvd1K8eTlTNpQIrhZC9EDheUKiYE3j6TyR4+XepKV0E2MndVONwgywIDAQAB" )
 devel.khms1.de.	86400	IN	A	178.104.223.86
 devel.khms1.de.	86400	IN	MX	10 mail.khms1.de.
 dns-server.khms1.de.	86400	IN	A	94.130.183.229
 dns-server.khms1.de.	86400	IN	MX	10 mail.khms1.de.
 dns.khms1.de.	86400	IN	A	94.130.183.229
 dns.khms1.de.	86400	IN	MX	10 mail.khms1.de.
-dns_1._domainkey.khms1.de.	86400	IN	TXT	(
-	"v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtpLhR+LFX1cz4UNwX7RN5ZXydOcOCbyvLeaBonM/5SNwNBKT3XB8zK/rY0t1H2oxQ9o8WIk6nYW+FLsg5ntIqjnKx8nIojJBNpXqgQKGn47YLjwVy9lenJLUmY3+D1vEqifZgIFf7VIA238eAt7Pm9wy1/JhuGSDCRxVQxUEPAPHPqwF+mHWir0l0hGKu8sEdHx84CJIulvwOdRXGpLhURuRLfIs4w/30WyOFcXfWz1Rs2jO/9MtXiYG7kOUHAWEk0kSrI6gV2/31F8TEuVQZeVQU2ZZIl/y1tTrRCOLFibQI011YKge+itGhsFINk4TikWu7Sg/hh9j+3/X7BlgpQIDAQAB"
-	)
-khms1.de.	86400	IN	TXT	(
-	"v=spf1 ip4:94.130.183.229 ip4:195.201.17.234 ip4:178.104.223.86 ~all" )
+dns_1._domainkey.khms1.de.	86400	IN	TXT	( "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtpLhR+LFX1cz4UNwX7RN5ZXydOcOCbyvLeaBonM/5SNwNBKT3XB8zK/rY0t1H2oxQ9o8WIk6nYW+FLsg5ntIqjnKx8nIojJBNpXqgQKGn47YLjwVy9lenJLUmY3+D1vEqifZgIFf7VIA238eAt7Pm9wy1/JhuGSDCRxVQxUEPAPHPqwF+mHWir0l0hGKu8sEd" "Hx84CJIulvwOdRXGpLhURuRLfIs4w/30WyOFcXfWz1Rs2jO/9MtXiYG7kOUHAWEk0kSrI6gV2/31F8TEuVQZeVQU2ZZIl/y1tTrRCOLFibQI011YKge+itGhsFINk4TikWu7Sg/hh9j+3/X7BlgpQIDAQAB" )
+khms1.de.	86400	IN	TXT	"v=spf1 ip4:94.130.183.229 ip4:195.201.17.234 ip4:178.104.223.86 ~all"
 mail-server.khms1.de.	86400	IN	A	195.201.17.234
 mail-server.khms1.de.	86400	IN	MX	10 mail.khms1.de.
 mail.khms1.de.	86400	IN	A	195.201.17.234
