@@ -296,7 +296,7 @@ sub main() {
         }
     }
 
-    # print Dumper(%network, %many, %hosts, %subnets, @external_domains, @externally_visible, $internal_domain, $ipv4base);
+ # print Dumper(%network, %many, %hosts, %subnets, @external_domains, @externally_visible, $internal_domain, $ipv4base);
     print Dumper(
         %network,         %hosts,    %subnets,   @external_domains, %externally_visible,
         $internal_domain, $ipv4base, $ipv4base4, %external_subnets
@@ -308,265 +308,265 @@ sub main() {
 
     for my $hostname ( sort keys %hosts ) {
         for my $subnet_name ( sort keys %{ $hosts{$hostname}{net4} } ) {
-        my $ip_address = inet_ntoa( $hosts{$hostname}{net4}{$subnet_name} );
-        my $record_obj = Net::DNS::RR->new(
-            owner   => "$hostname.$subnet_name.$internal_domain",
-            ttl     => 60 * 60 * 24,
-            type    => 'A',
-            address => $ip_address,
-        );
-        $addr_map{ $record_obj->owner } = $record_obj->address;
-        $output{"$internal_domain"}{ $record_obj->string }++;
-        add_more "$hostname.$subnet_name.$internal_domain", "$internal_domain", 0;
-        my $dns_question = Net::DNS::Question->new($ip_address);
-        $record_obj = Net::DNS::RR->new(
-            ptrdname => "$hostname.$subnet_name.$internal_domain",
-            ttl      => 60 * 60 * 24,
-            type     => 'PTR',
-            owner    => $dns_question->name,
-        );
-        my $reverse_domain = $record_obj->owner;
-        my $private_zone   = is_priv $ip_address;
+            my $ip_address = inet_ntoa( $hosts{$hostname}{net4}{$subnet_name} );
+            my $record_obj = Net::DNS::RR->new(
+                owner   => "$hostname.$subnet_name.$internal_domain",
+                ttl     => 60 * 60 * 24,
+                type    => 'A',
+                address => $ip_address,
+            );
+            $addr_map{ $record_obj->owner } = $record_obj->address;
+            $output{"$internal_domain"}{ $record_obj->string }++;
+            add_more "$hostname.$subnet_name.$internal_domain", "$internal_domain", 0;
+            my $dns_question = Net::DNS::Question->new($ip_address);
+            $record_obj = Net::DNS::RR->new(
+                ptrdname => "$hostname.$subnet_name.$internal_domain",
+                ttl      => 60 * 60 * 24,
+                type     => 'PTR',
+                owner    => $dns_question->name,
+            );
+            my $reverse_domain = $record_obj->owner;
+            my $private_zone   = is_priv $ip_address;
 
-        if ( defined $private_zone ) {
+            if ( defined $private_zone ) {
 
-            #print __LINE__, "\n", Dumper($record_obj->owner, $private_zone);
-            $output{$private_zone}{ $record_obj->string }++;
-        }
-        else {
-            # not on our servers
-            # $rdom =~ s/^[^.]+\.//;
-            # #print __LINE__, "\n", Dumper($rr->owner, $rdom);
-            # $output{$rdom}{$rr->string}++;
-        }
+                #print __LINE__, "\n", Dumper($record_obj->owner, $private_zone);
+                $output{$private_zone}{ $record_obj->string }++;
+            }
+            else {
+                # not on our servers
+                # $rdom =~ s/^[^.]+\.//;
+                # #print __LINE__, "\n", Dumper($rr->owner, $rdom);
+                # $output{$rdom}{$rr->string}++;
+            }
 
-        #my $nip = NetAddr::IP->new_from_aton($hosts{$hostname}{net4}{$subnet_name});
-        #print "RFC 1918: ", $nip->is_rfc1918? "yes": "no", "\n";
-        #print Dumper($hostname, %externally_visible) if not $private_zone;
-        if (    not exists $subnets{$subnet_name}{num}
-            and not defined $private_zone
-            and exists $externally_visible{$hostname} )
-        {
-            for my $domain_name (@external_domains) {
-                my $record_obj = Net::DNS::RR->new(
-                    owner   => "$hostname.$domain_name",
-                    ttl     => 60 * 60 * 24,
-                    type    => 'A',
-                    address => $ip_address,
-                );
-                $addr_map{ $record_obj->owner } = $record_obj->address;
-                $output{$domain_name}{ $record_obj->string }++;
-                add_more "$hostname.$domain_name", $domain_name, 1;
-                if (1) {
-                    my $dns_question = Net::DNS::Question->new($ip_address);
-                    $record_obj = Net::DNS::RR->new(
-                        ptrdname => "$hostname.$domain_name",
-                        ttl      => 60 * 60 * 24,
-                        type     => 'PTR',
-                        owner    => $dns_question->name,
+            #my $nip = NetAddr::IP->new_from_aton($hosts{$hostname}{net4}{$subnet_name});
+            #print "RFC 1918: ", $nip->is_rfc1918? "yes": "no", "\n";
+            #print Dumper($hostname, %externally_visible) if not $private_zone;
+            if (    not exists $subnets{$subnet_name}{num}
+                and not defined $private_zone
+                and exists $externally_visible{$hostname} )
+            {
+                for my $domain_name (@external_domains) {
+                    my $record_obj = Net::DNS::RR->new(
+                        owner   => "$hostname.$domain_name",
+                        ttl     => 60 * 60 * 24,
+                        type    => 'A',
+                        address => $ip_address,
                     );
-                    my $reverse_domain = $record_obj->owner;
-                    my $private_zone   = is_priv $ip_address;
-                    if ( defined $private_zone ) {
+                    $addr_map{ $record_obj->owner } = $record_obj->address;
+                    $output{$domain_name}{ $record_obj->string }++;
+                    add_more "$hostname.$domain_name", $domain_name, 1;
+                    if (1) {
+                        my $dns_question = Net::DNS::Question->new($ip_address);
+                        $record_obj = Net::DNS::RR->new(
+                            ptrdname => "$hostname.$domain_name",
+                            ttl      => 60 * 60 * 24,
+                            type     => 'PTR',
+                            owner    => $dns_question->name,
+                        );
+                        my $reverse_domain = $record_obj->owner;
+                        my $private_zone   = is_priv $ip_address;
+                        if ( defined $private_zone ) {
 
-                        #print __LINE__, "\n", Dumper($record_obj->owner, $private_zone);
-                        $output{$private_zone}{ $record_obj->string }++;
-                    }
-                    else {
-                        # not on our servers
-                        # $reverse_domain =~ s/^[^.]+\.//;
-                        # #print __LINE__, "\n", Dumper($record_obj->owner, $reverse_domain);
-                        # $output{$reverse_domain}{$record_obj->string}++;
-                    }
-                }
-                for my $alias_name ( keys %externally_visible ) {
-                    my $target_host = $externally_visible{$alias_name};
-                    if ($target_host) {
-                        if ( $target_host eq $hostname ) {
-                            if (0) {
-                                $record_obj = Net::DNS::RR->new(
-                                    name  => "$alias_name.$domain_name",
-                                    ttl   => 60 * 60 * 24,
-                                    type  => 'CNAME',
-                                    cname => "$hostname.$domain_name",
-                                );
-                                $addr_map{ $record_obj->owner } = $addr_map{ $record_obj->cname };
-                                $output{$domain_name}{ $record_obj->string }++;
-                            }
-                            $record_obj = Net::DNS::RR->new(
-                                owner   => "$alias_name.$domain_name",
-                                ttl     => 60 * 60 * 24,
-                                type    => 'A',
-                                address => $ip_address,
-                            );
-                            $addr_map{ $record_obj->owner } = $record_obj->address;
-                            $output{$domain_name}{ $record_obj->string }++;
-                            add_more "$alias_name.$domain_name", $domain_name, 1;
+                            #print __LINE__, "\n", Dumper($record_obj->owner, $private_zone);
+                            $output{$private_zone}{ $record_obj->string }++;
                         }
+                        else {
+                            # not on our servers
+                            # $reverse_domain =~ s/^[^.]+\.//;
+                            # #print __LINE__, "\n", Dumper($record_obj->owner, $reverse_domain);
+                            # $output{$reverse_domain}{$record_obj->string}++;
+                        }
+                    }
+                    for my $alias_name ( keys %externally_visible ) {
+                        my $target_host = $externally_visible{$alias_name};
+                        if ($target_host) {
+                            if ( $target_host eq $hostname ) {
+                                if (0) {
+                                    $record_obj = Net::DNS::RR->new(
+                                        name  => "$alias_name.$domain_name",
+                                        ttl   => 60 * 60 * 24,
+                                        type  => 'CNAME',
+                                        cname => "$hostname.$domain_name",
+                                    );
+                                    $addr_map{ $record_obj->owner } = $addr_map{ $record_obj->cname };
+                                    $output{$domain_name}{ $record_obj->string }++;
+                                }
+                                $record_obj = Net::DNS::RR->new(
+                                    owner   => "$alias_name.$domain_name",
+                                    ttl     => 60 * 60 * 24,
+                                    type    => 'A',
+                                    address => $ip_address,
+                                );
+                                $addr_map{ $record_obj->owner } = $record_obj->address;
+                                $output{$domain_name}{ $record_obj->string }++;
+                                add_more "$alias_name.$domain_name", $domain_name, 1;
+                            }
 
-                        #my $x = $target_host ^ $hostname;
-                        #print Dumper($hostname, $alias_name, $target_host, $x);
+                            #my $x = $target_host ^ $hostname;
+                            #print Dumper($hostname, $alias_name, $target_host, $x);
+                        }
                     }
                 }
             }
         }
     }
-}
-for my $pick_alias ( keys %pick ) {
-    my $target_subnet = $pick{$pick_alias};
-    if (0) {
+    for my $pick_alias ( keys %pick ) {
+        my $target_subnet = $pick{$pick_alias};
+        if (0) {
+            my $record_obj = Net::DNS::RR->new(
+                name  => "$pick_alias.$internal_domain",
+                ttl   => 60 * 60 * 24,
+                type  => 'CNAME',
+                cname => "$pick_alias.$target_subnet.$internal_domain",
+            );
+            $addr_map{ $record_obj->owner } = $addr_map{ $record_obj->cname };
+            $output{$internal_domain}{ $record_obj->string }++;
+        }
         my $record_obj = Net::DNS::RR->new(
-            name  => "$pick_alias.$internal_domain",
-            ttl   => 60 * 60 * 24,
-            type  => 'CNAME',
-            cname => "$pick_alias.$target_subnet.$internal_domain",
+            owner   => "$pick_alias.$internal_domain",
+            ttl     => 60 * 60 * 24,
+            type    => 'A',
+            address => $addr_map{"$pick_alias.$target_subnet.$internal_domain"},
         );
-        $addr_map{ $record_obj->owner } = $addr_map{ $record_obj->cname };
+        $addr_map{ $record_obj->owner } = $record_obj->address;
         $output{$internal_domain}{ $record_obj->string }++;
+        add_more "$pick_alias.$internal_domain", $internal_domain, 1;
     }
-    my $record_obj = Net::DNS::RR->new(
-        owner   => "$pick_alias.$internal_domain",
-        ttl     => 60 * 60 * 24,
-        type    => 'A',
-        address => $addr_map{"$pick_alias.$target_subnet.$internal_domain"},
-    );
-    $addr_map{ $record_obj->owner } = $record_obj->address;
-    $output{$internal_domain}{ $record_obj->string }++;
-    add_more "$pick_alias.$internal_domain", $internal_domain, 1;
-}
 
-# ============================================================================
-# Zone-level record generation (SPF, DKIM, DMARC, etc.)
-# ============================================================================
+    # ============================================================================
+    # Zone-level record generation (SPF, DKIM, DMARC, etc.)
+    # ============================================================================
 
-for my $zone_name ( keys %output ) {
-    add_zone_records $zone_name;
-}
+    for my $zone_name ( keys %output ) {
+        add_zone_records $zone_name;
+    }
 
-print Dumper( %output, %addr_map );
+    print Dumper( %output, %addr_map );
 
-# ============================================================================
-# BIND configuration output
-# ============================================================================
+    # ============================================================================
+    # BIND configuration output
+    # ============================================================================
 
-# Create BIND configuration files
-my $confm = "$internal_domain-zones.conf";
-open my $CONFMASTER, '>', $confm or die "$confm: $!";
-my @files_master = $confm;
-my $confs        = "$confm.tmp";
-open my $CONFSLAVE, '>', $confs or die "$confs: $!";
-my @files_slave = $confs;
-my $CONF        = IO::Tee->new( $CONFMASTER, $CONFSLAVE );
+    # Create BIND configuration files
+    my $confm = "$internal_domain-zones.conf";
+    open my $CONFMASTER, '>', $confm or die "$confm: $!";
+    my @files_master = $confm;
+    my $confs        = "$confm.tmp";
+    open my $CONFSLAVE, '>', $confs or die "$confs: $!";
+    my @files_slave = $confs;
+    my $CONF        = IO::Tee->new( $CONFMASTER, $CONFSLAVE );
 
-my %own;
-for my $ip_addr ( values %addr_map ) {
-    $own{$ip_addr}++;
-}
-my @own          = map { NetAddr::IP->new($_) } keys %own;
-my $private_acl  = bind_list @priv, NetAddr::IP->new('127/8'), @own;
-my $external_acl = bind_list qw( 0.0.0.0/0 );
-print $CONF <<EOF;
+    my %own;
+    for my $ip_addr ( values %addr_map ) {
+        $own{$ip_addr}++;
+    }
+    my @own          = map { NetAddr::IP->new($_) } keys %own;
+    my $private_acl  = bind_list @priv, NetAddr::IP->new('127/8'), @own;
+    my $external_acl = bind_list qw( 0.0.0.0/0 );
+    print $CONF <<EOF;
 
 acl internal $private_acl
 acl external $external_acl
 
 EOF
-$CONF->flush;
-my $res = Net::DNS::Resolver->new;
-$res->debug(1);
+    $CONF->flush;
+    my $res = Net::DNS::Resolver->new;
+    $res->debug(1);
 
-# ============================================================================
-# Zone file generation and serial number management
-# ============================================================================
+    # ============================================================================
+    # Zone file generation and serial number management
+    # ============================================================================
 
-for my $zone_name ( map { scalar reverse } sort map { scalar reverse } keys %output ) {
-    my $zone_filename = "$zone_name.zone";
-    print "# $zone_filename ";
-    open my $ZONE, '>', $zone_filename or die "$zone_filename: $!";
-    push @files_master, $zone_filename;
-    print $ZONE "; $zone_filename\n";
+    for my $zone_name ( map { scalar reverse } sort map { scalar reverse } keys %output ) {
+        my $zone_filename = "$zone_name.zone";
+        print "# $zone_filename ";
+        open my $ZONE, '>', $zone_filename or die "$zone_filename: $!";
+        push @files_master, $zone_filename;
+        print $ZONE "; $zone_filename\n";
 
-    # Query existing SOA record to preserve and increment serial number
-    my $zone_serial;
-    my $dns_reply = $res->query( $zone_name . '.', 'SOA' );
-    if ($dns_reply) {
+        # Query existing SOA record to preserve and increment serial number
+        my $zone_serial;
+        my $dns_reply = $res->query( $zone_name . '.', 'SOA' );
+        if ($dns_reply) {
 
-        # Extract serial from existing SOA record
-        foreach my $record_obj ( $dns_reply->answer ) {
-            $zone_serial = $record_obj->serial;
-            print "serial=$zone_serial\n";
-            print "mname=", $record_obj->mname, "\n";
-            print "rname=", $record_obj->rname, "\n";
+            # Extract serial from existing SOA record
+            foreach my $record_obj ( $dns_reply->answer ) {
+                $zone_serial = $record_obj->serial;
+                print "serial=$zone_serial\n";
+                print "mname=", $record_obj->mname, "\n";
+                print "rname=", $record_obj->rname, "\n";
+            }
         }
-    }
-    else {    # SOA query failed - log the error
-        my $msg =
-            "query ($zone_name SOA [serial]) failed: "
-          . $res->errorstring
-          . "\nLast answer from "
-          . $res->answerfrom . "\n"
-          . $res->string;
+        else {    # SOA query failed - log the error
+            my $msg =
+                "query ($zone_name SOA [serial]) failed: "
+              . $res->errorstring
+              . "\nLast answer from "
+              . $res->answerfrom . "\n"
+              . $res->string;
 
-        #$msg =~ tr/\n / /s;
-        print $msg, ' ';
-    }
-    my $record_obj = Net::DNS::RR->new(
-        mname   => $external_nameservers[0],
-        rname   => $responsible,
-        serial  => $zone_serial,
-        ttl     => 60 * 60 * 24,
-        refresh => 60 * 60 * 24 / 2,
-        retry   => 60 * 60 * 2,
-        expire  => 60 * 60 * 24 * 28,
-        minimum => 60 * 60 * 24,
-        type    => 'SOA',
-        owner   => $zone_name,
-    );
-    $record_obj->serial( $record_obj->serial(YYYYMMDDxx) );
-    print "serial->new=", $record_obj->serial, "\n";
-
-    #$output{$zone_name}{$record_obj->string}++;
-    print $ZONE "\n";
-    print $ZONE $record_obj->string, "\n";
-
-    # Determine which nameservers to use (internal or external)
-    my @zone_parts = split /\./, $zone_name;
-    my $zone_tld   = pop @zone_parts;
-    print Dumper( $zone_name, @zone_parts, $zone_tld, $internal_domain );
-    my @nameserver_list;
-    if ( $zone_tld eq $internal_domain or $zone_tld eq 'arpa' ) {
-
-        # Use internal nameservers for internal zones
-        @nameserver_list = @internal_nameservers;
-    }
-    else {
-        # Use external nameservers for external zones
-        @nameserver_list = @external_nameservers;
-    }
-    print Dumper(@nameserver_list);
-    for my $nameserver (@nameserver_list) {
+            #$msg =~ tr/\n / /s;
+            print $msg, ' ';
+        }
         my $record_obj = Net::DNS::RR->new(
-            nsdname => $nameserver,
-            type    => 'NS',
+            mname   => $external_nameservers[0],
+            rname   => $responsible,
+            serial  => $zone_serial,
+            ttl     => 60 * 60 * 24,
+            refresh => 60 * 60 * 24 / 2,
+            retry   => 60 * 60 * 2,
+            expire  => 60 * 60 * 24 * 28,
+            minimum => 60 * 60 * 24,
+            type    => 'SOA',
             owner   => $zone_name,
         );
+        $record_obj->serial( $record_obj->serial(YYYYMMDDxx) );
+        print "serial->new=", $record_obj->serial, "\n";
 
         #$output{$zone_name}{$record_obj->string}++;
+        print $ZONE "\n";
         print $ZONE $record_obj->string, "\n";
-    }
-    for my $record_str ( sort keys %{ $output{$zone_name} } ) {
-        print $ZONE $record_str, "\n";
-    }
-    print $ZONE "\n";
-    close $ZONE or die "$zone_filename: $!";
 
-    # Configure zone for both master and slave servers
-    my @access_queries = qw( internal );
-    push @access_queries, qw( external ) if $external_domains{$zone_name};
-    my $access_queries_acl = bind_list @access_queries;
-    my $notify_acl         = bind_list( $addr_map{$slave} );
-    print Dumper($notify_acl);
-    print $CONFMASTER <<EOF;
+        # Determine which nameservers to use (internal or external)
+        my @zone_parts = split /\./, $zone_name;
+        my $zone_tld   = pop @zone_parts;
+        print Dumper( $zone_name, @zone_parts, $zone_tld, $internal_domain );
+        my @nameserver_list;
+        if ( $zone_tld eq $internal_domain or $zone_tld eq 'arpa' ) {
+
+            # Use internal nameservers for internal zones
+            @nameserver_list = @internal_nameservers;
+        }
+        else {
+            # Use external nameservers for external zones
+            @nameserver_list = @external_nameservers;
+        }
+        print Dumper(@nameserver_list);
+        for my $nameserver (@nameserver_list) {
+            my $record_obj = Net::DNS::RR->new(
+                nsdname => $nameserver,
+                type    => 'NS',
+                owner   => $zone_name,
+            );
+
+            #$output{$zone_name}{$record_obj->string}++;
+            print $ZONE $record_obj->string, "\n";
+        }
+        for my $record_str ( sort keys %{ $output{$zone_name} } ) {
+            print $ZONE $record_str, "\n";
+        }
+        print $ZONE "\n";
+        close $ZONE or die "$zone_filename: $!";
+
+        # Configure zone for both master and slave servers
+        my @access_queries = qw( internal );
+        push @access_queries, qw( external ) if $external_domains{$zone_name};
+        my $access_queries_acl = bind_list @access_queries;
+        my $notify_acl         = bind_list( $addr_map{$slave} );
+        print Dumper($notify_acl);
+        print $CONFMASTER <<EOF;
 
 zone "$zone_name" {
 	type master;
@@ -577,37 +577,37 @@ zone "$zone_name" {
 };
 
 EOF
-    my $master_acl  = bind_list( $addr_map{$master} );
-    my $notify_flag = $external_domains{$zone_name} ? 'yes' : 'no';
-    my @nameserver_addresses;
+        my $master_acl  = bind_list( $addr_map{$master} );
+        my $notify_flag = $external_domains{$zone_name} ? 'yes' : 'no';
+        my @nameserver_addresses;
 
-    for my $nameserver (@nameserver_list) {
-        if ( defined $addr_map{$_} ) {
-            push @nameserver_addresses, $addr_map{$_};
-        }
-        else {
-            my $dns_query_result = $res->query( $nameserver . '.', 'A' );
-            if ($dns_query_result) {
-                foreach my $record_obj ( $dns_query_result->answer ) {
-                    my $ip_addr = $record_obj->address;
-                    push @nameserver_addresses, $ip_addr;
-                }
+        for my $nameserver (@nameserver_list) {
+            if ( defined $addr_map{$_} ) {
+                push @nameserver_addresses, $addr_map{$_};
             }
             else {
-                my $msg =
-                    "query ($nameserver A [transfer]) failed: "
-                  . $res->errorstring
-                  . "\nLast answer from "
-                  . $res->answerfrom . "\n"
-                  . $res->string;
+                my $dns_query_result = $res->query( $nameserver . '.', 'A' );
+                if ($dns_query_result) {
+                    foreach my $record_obj ( $dns_query_result->answer ) {
+                        my $ip_addr = $record_obj->address;
+                        push @nameserver_addresses, $ip_addr;
+                    }
+                }
+                else {
+                    my $msg =
+                        "query ($nameserver A [transfer]) failed: "
+                      . $res->errorstring
+                      . "\nLast answer from "
+                      . $res->answerfrom . "\n"
+                      . $res->string;
 
-                #$msg =~ tr/\n / /s;
-                print $msg, ' ';
+                    #$msg =~ tr/\n / /s;
+                    print $msg, ' ';
+                }
             }
         }
-    }
-    my $transfer_acl = bind_list qw( internal ), @nameserver_addresses;
-    print $CONFSLAVE <<EOF;
+        my $transfer_acl = bind_list qw( internal ), @nameserver_addresses;
+        print $CONFSLAVE <<EOF;
 
 zone "$zone_name" {
 	type slave;
@@ -619,66 +619,66 @@ zone "$zone_name" {
 };
 
 EOF
-    print ".\n";
-}
-for my $slave_server ( @{ $network{slaves}{zone} } ) {
-    my $dns_reply = $res->query( $slave_server . '.', 'NS' );
-    my @ns_addresses;
-    if ($dns_reply) {
-        foreach my $record_obj ( $dns_reply->answer ) {
-            my $ns_name        = $record_obj->nsdname;
-            my $a_query_result = $res->query( $ns_name . '.', 'A' );
-            if ($a_query_result) {
-                foreach my $a_record ( $a_query_result->answer ) {
-                    my $record_type = $a_record->type;
-                    if ( $record_type eq 'A' ) {
-                        my $ip_addr = $a_record->address;
-                        push @ns_addresses, $ip_addr;
-                    }
-                    elsif ( $record_type eq 'CNAME' ) {
-                        my $cname_query = $res->query( $a_record->cname . '.', 'A' );
-                        foreach my $cname_a_record ( $cname_query->answer ) {
-                            my $cname_type = $cname_a_record->type;
-                            if ( $cname_type eq 'A' ) {
-                                my $ip_addr = $cname_a_record->address;
-                                push @ns_addresses, $ip_addr;
-                            }
-                            else {
-                                die "Bad type '$cname_type'";
+        print ".\n";
+    }
+    for my $slave_server ( @{ $network{slaves}{zone} } ) {
+        my $dns_reply = $res->query( $slave_server . '.', 'NS' );
+        my @ns_addresses;
+        if ($dns_reply) {
+            foreach my $record_obj ( $dns_reply->answer ) {
+                my $ns_name        = $record_obj->nsdname;
+                my $a_query_result = $res->query( $ns_name . '.', 'A' );
+                if ($a_query_result) {
+                    foreach my $a_record ( $a_query_result->answer ) {
+                        my $record_type = $a_record->type;
+                        if ( $record_type eq 'A' ) {
+                            my $ip_addr = $a_record->address;
+                            push @ns_addresses, $ip_addr;
+                        }
+                        elsif ( $record_type eq 'CNAME' ) {
+                            my $cname_query = $res->query( $a_record->cname . '.', 'A' );
+                            foreach my $cname_a_record ( $cname_query->answer ) {
+                                my $cname_type = $cname_a_record->type;
+                                if ( $cname_type eq 'A' ) {
+                                    my $ip_addr = $cname_a_record->address;
+                                    push @ns_addresses, $ip_addr;
+                                }
+                                else {
+                                    die "Bad type '$cname_type'";
+                                }
                             }
                         }
-                    }
-                    else {
-                        die "Bad type '$record_type'";
+                        else {
+                            die "Bad type '$record_type'";
+                        }
                     }
                 }
-            }
-            else {
-                my $msg =
-                    "query ($ns_name A [masters]) failed: "
-                  . $res->errorstring
-                  . "\nLast answer from "
-                  . $res->answerfrom . "\n"
-                  . $res->string;
+                else {
+                    my $msg =
+                        "query ($ns_name A [masters]) failed: "
+                      . $res->errorstring
+                      . "\nLast answer from "
+                      . $res->answerfrom . "\n"
+                      . $res->string;
 
-                #$msg =~ tr/\n / /s;
-                print $msg, ' ';
+                    #$msg =~ tr/\n / /s;
+                    print $msg, ' ';
+                }
             }
         }
-    }
-    else {
-        my $msg =
-            "query ($slave_server NS [masters]) failed: "
-          . $res->errorstring
-          . "\nLast answer from "
-          . $res->answerfrom . "\n"
-          . $res->string;
+        else {
+            my $msg =
+                "query ($slave_server NS [masters]) failed: "
+              . $res->errorstring
+              . "\nLast answer from "
+              . $res->answerfrom . "\n"
+              . $res->string;
 
-        #$msg =~ tr/\n / /s;
-        print $msg, ' ';
-    }
-    my $slave_ns_acl = bind_list @ns_addresses;
-    print $CONF <<EOF;
+            #$msg =~ tr/\n / /s;
+            print $msg, ' ';
+        }
+        my $slave_ns_acl = bind_list @ns_addresses;
+        print $CONF <<EOF;
 
 zone "$slave_server" {
 	type slave;
@@ -688,36 +688,36 @@ zone "$slave_server" {
 };
 
 EOF
-}
-for my $priv_network (@priv) {
-    my $private_zone_name = is_priv $priv_network->addr;
-    unless ( exists $output{$private_zone_name} ) {
-        my @default_zone_def = ( q{type master}, q{file "/etc/bind/db.empty"}, );
-        my $default_zone_str = bind_list @default_zone_def;
-        print $CONF <<EOF;
+    }
+    for my $priv_network (@priv) {
+        my $private_zone_name = is_priv $priv_network->addr;
+        unless ( exists $output{$private_zone_name} ) {
+            my @default_zone_def = ( q{type master}, q{file "/etc/bind/db.empty"}, );
+            my $default_zone_str = bind_list @default_zone_def;
+            print $CONF <<EOF;
 zone "$private_zone_name"  $default_zone_str
 EOF
+        }
     }
-}
-$CONF->flush;
-close $CONFMASTER or die "$confm: $!";
-close $CONFSLAVE  or die "$confs: $!";
+    $CONF->flush;
+    close $CONFMASTER or die "$confm: $!";
+    close $CONFSLAVE  or die "$confs: $!";
 
-#close $CONF or die "Tee: $!";
-print "\n";
-print "master <- ", join( ' ', @files_master ), "\n";
-if (1) {
-    system( qw(cp -av), @files_master, qw(..) ) == 0 or die "cp: !=$! ?=$?";
-    system(qw(systemctl restart bind9));
-    system(qw(systemctl status bind9));
-    print "slave <- ", join( ' ', @files_slave ), "\n";
-    system( qw(scp -pr), @files_slave, "$addr_map{$slave}:/etc/bind/" );
-    system( qw(ssh), $addr_map{$slave}, qw(cmp -s), "/etc/bind/$confs", "/etc/bind/$confm",
-        qw(|| mv -v --backup=numbered),
-        "/etc/bind/$confs", "/etc/bind/$confm" );
-    system( qw(ssh), $addr_map{$slave}, qw(systemctl restart bind9) );
-    system( qw(ssh), $addr_map{$slave}, qw(systemctl status bind9) );
-}
+    #close $CONF or die "Tee: $!";
+    print "\n";
+    print "master <- ", join( ' ', @files_master ), "\n";
+    if (1) {
+        system( qw(cp -av), @files_master, qw(..) ) == 0 or die "cp: !=$! ?=$?";
+        system(qw(systemctl restart bind9));
+        system(qw(systemctl status bind9));
+        print "slave <- ", join( ' ', @files_slave ), "\n";
+        system( qw(scp -pr), @files_slave, "$addr_map{$slave}:/etc/bind/" );
+        system( qw(ssh), $addr_map{$slave}, qw(cmp -s), "/etc/bind/$confs", "/etc/bind/$confm",
+            qw(|| mv -v --backup=numbered),
+            "/etc/bind/$confs", "/etc/bind/$confm" );
+        system( qw(ssh), $addr_map{$slave}, qw(systemctl restart bind9) );
+        system( qw(ssh), $addr_map{$slave}, qw(systemctl status bind9) );
+    }
 
 }    # End of main()
 
