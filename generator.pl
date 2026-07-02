@@ -147,9 +147,10 @@ sub add_zone_records($) {
 
     for my $record_key ( @{ $network{zone_records}{records} } ) {
         next unless exists $network{zone_records}{$record_key};
+        next if $record_key eq 'records';  # Skip the records list itself
 
         my ( $scope, $owner_prefix, $rtype, $rdata ) =
-          split /\|/, $network{zone_records}{$record_key}[0], 4;
+          split /\|/, $network{zone_records}{$record_key}, 4;
 
         next if $scope eq 'ext' && !$zone_is_external;
         next if $scope eq 'int' && !$zone_is_internal;
@@ -157,14 +158,33 @@ sub add_zone_records($) {
         $rdata =~ s/\$/$zone_name/g;
 
         my $full_owner = ( $owner_prefix eq '@' ) ? $zone_name : "$owner_prefix.$zone_name";
+        # Ensure owner name ends with dot for BIND zone files
+        $full_owner .= '.' unless $full_owner =~ /\.$/;
 
-        my $record_obj =
-          ( $rtype eq 'TXT' )
-          ? Net::DNS::RR->new(qq{$full_owner $rtype "$rdata"})
-          : Net::DNS::RR->new("$full_owner $rtype $rdata");
+        # For TXT records, build manually without wrapping long lines
+        my $record_str;
+        if ( $rtype eq 'TXT' ) {
+            # For very long TXT records (DKIM, etc), split into chunks
+            # BIND can handle multi-line TXT with continuation in parentheses
+            my @chunks = $rdata =~ /(.{1,255})/g;
+            my $data_str;
+            if (@chunks > 1) {
+                # Multi-chunk: use BIND continuation format
+                $data_str = "( \"" . join("\" \"", @chunks) . "\" )";
+                $record_str = qq{$full_owner\t86400\tIN\t$rtype\t$data_str};
+            } else {
+                # Single chunk: simple format
+                $record_str = qq{$full_owner\t86400\tIN\t$rtype\t"$rdata"};
+            }
+        }
+        else {
+            # For non-TXT records, use Net::DNS::RR for proper formatting
+            my $record_obj = Net::DNS::RR->new("$full_owner $rtype $rdata");
+            $record_obj->ttl(86400);
+            $record_str = $record_obj->string;
+        }
 
-        $record_obj->ttl( 60 * 60 * 24 );
-        $output{$zone_name}{ $record_obj->string }++;
+        $output{$zone_name}{$record_str}++;
     }
 }
 
