@@ -74,7 +74,7 @@ my $network =
 # Load and parse network.ini configuration
 # ============================================================================
 
-
+$network->RewriteConfig;
 
 # ============================================================================
 # Transform configuration into convenient data structures
@@ -92,8 +92,6 @@ for my $section_name ( $network->Sections ) {
         }
     }
 }
-
-$network->RewriteConfig;
 
 # ============================================================================
 # Build network and host objects
