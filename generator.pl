@@ -715,17 +715,25 @@ EOF
     # Deploy generated files using sudo script
     # ========================================================================
 
+    # Build deployment command with optional slave parameters
+    my @deploy_cmd_args = @files_master;
+    
+    if ( @files_slave && $slave && $addr_map{$slave} ) {
+        # Add slave deployment parameters
+        push @deploy_cmd_args, '--', $addr_map{$slave}, @files_slave;
+    }
+
     # Prompt user to run deployment script
     print "\n";
     print "========================================\n";
     print "To deploy these files, run:\n";
-    print "  sudo ./deploy-zones.sh ", join( ' ', @files_master ), "\n";
+    print "  sudo ./deploy-zones.sh ", join( ' ', @deploy_cmd_args ), "\n";
     print "========================================\n";
 
     # Attempt deployment if script exists and is executable
     if ( -x './deploy-zones.sh' ) {
         print "\nAttempting automatic deployment...\n";
-        my $deploy_cmd = 'sudo ./deploy-zones.sh ' . join( ' ', @files_master );
+        my $deploy_cmd = 'sudo ./deploy-zones.sh ' . join( ' ', @deploy_cmd_args );
         system($deploy_cmd);
     }
     else {
