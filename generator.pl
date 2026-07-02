@@ -238,8 +238,7 @@ sub add_zone_records($) {
 
         $rdata =~ s/\$/$zone_name/g;
 
-        my $full_owner =
-          ( $owner_prefix eq '@' ) ? $zone_name : "$owner_prefix.$zone_name";
+        my $full_owner = ( $owner_prefix eq '@' ) ? $zone_name : "$owner_prefix.$zone_name";
 
         my $record_obj =
           ( $rtype eq 'TXT' )
