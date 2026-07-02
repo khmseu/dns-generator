@@ -199,6 +199,58 @@ sub add_more($$$) {
     }
 }
 
+sub add_zone_records($) {
+
+    # Add zone-level DNS records from the 'zone_records' section of config.
+    # Unlike add_more (which stamps a record onto every host), this adds one
+    # record per zone at a fixed owner name (zone apex or a named prefix).
+    #
+    # Format in network.ini:
+    #   [zone_records]
+    #   records=spf dmarc dkim_sel1
+    #   spf=ext|@|TXT|v=spf1 mx -all
+    #   dmarc=ext|_dmarc|TXT|v=DMARC1; p=none; rua=mailto:dmarc@$
+    #   dkim_sel1=ext|sel1._domainkey|TXT|v=DKIM1; k=rsa; p=MIIB...
+    #
+    # scope:  ext  => external domains only (@external_domains)
+    #         int  => internal domain only  ($internal_domain)
+    #         all  => every zone including reverse
+    # owner:  @    => zone apex
+    #         else => prefix prepended to zone name
+    # type:   any DNS record type (TXT, CAA, SSHFP, ...)
+    # rdata:  record data; $ expands to the zone name
+
+    my ($zone_name) = @_;
+    return unless exists $network{zone_records};
+    return unless exists $network{zone_records}{records};
+
+    my $zone_is_external = exists $external_domains{$zone_name};
+    my $zone_is_internal = ( $zone_name eq $internal_domain );
+
+    for my $record_key ( @{ $network{zone_records}{records} } ) {
+        next unless exists $network{zone_records}{$record_key};
+
+        my ( $scope, $owner_prefix, $rtype, $rdata ) =
+          split /\|/, $network{zone_records}{$record_key}[0], 4;
+
+        next if $scope eq 'ext' && !$zone_is_external;
+        next if $scope eq 'int' && !$zone_is_internal;
+
+        $rdata =~ s/\$/$zone_name/g;
+
+        my $full_owner =
+          ( $owner_prefix eq '@' ) ? $zone_name : "$owner_prefix.$zone_name";
+
+        my $record_obj =
+          ( $rtype eq 'TXT' )
+          ? Net::DNS::RR->new(qq{$full_owner $rtype "$rdata"})
+          : Net::DNS::RR->new("$full_owner $rtype $rdata");
+
+        $record_obj->ttl( 60 * 60 * 24 );
+        $output{$zone_name}{ $record_obj->string }++;
+    }
+}
+
 my @priv = (
     NetAddr::IP->new('10/8'),
     NetAddr::IP->new('172.16/12')->split(16),
@@ -352,6 +404,15 @@ for my $pick_alias ( keys %pick ) {
     $output{$internal_domain}{ $record_obj->string }++;
     add_more "$pick_alias.$internal_domain", $internal_domain, 1;
 }
+
+# ============================================================================
+# Zone-level record generation (SPF, DKIM, DMARC, etc.)
+# ============================================================================
+
+for my $zone_name ( keys %output ) {
+    add_zone_records $zone_name;
+}
+
 print Dumper( %output, %addr_map );
 
 # ============================================================================
