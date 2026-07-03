@@ -22,7 +22,7 @@
 
 The infrastructure spans three network layers: **internal subnets** (LAN), **tunnel subnets** (VPN/SSH), and **external cloud** (Hetzner). All hosts are centrally defined in `network.ini`.
 
-### Machines & Locations
+### Machines & Locations (selektiv)
 
 #### Internal Subnets (192.168.0.0/16)
 
@@ -39,25 +39,21 @@ The infrastructure spans three network layers: **internal subnets** (LAN), **tun
 | -------------- | ------------ | ------------------------------------- | ---------------------------- |
 | **dnstunnel**  | 10.18.0.0/24 | dns (10.18.0.1), desktop (10.18.0.2)  | DNS master-slave replication |
 | **mailtunnel** | 10.28.0.0/24 | mail (10.28.0.1), desktop (10.28.0.2) | Mail server tunnel           |
-| **tunnel**     | 10.8.0.0/24  | dns, mail, desktop                    | Legacy multi-service tunnel  |
 
 #### External (Hetzner Cloud + Legacy)
 
-| Subnet      | Hosts     | IP Addresses                           | Purpose                  |
-| ----------- | --------- | -------------------------------------- | ------------------------ |
-| **cloud**   | dns       | 94.130.183.229 / 2a01:4f8:1c0c:43dd::1 | Primary DNS (external)   |
-|             | mail      | 195.201.17.234 / 2a01:4f8:1c0c:4a3b::1 | Mail server (Hetzner)    |
-|             | devel     | 178.104.223.86 / 2a01:4f8:c015:1e1d::1 | Development (Hetzner)    |
-| **gws**     | westfalen | 78.47.110.152                          | Secondary cloud provider |
-| **rootsvr** | oldroot   | 188.40.57.14                           | Legacy root server       |
-|             | oldmail   | 188.40.57.58                           | Legacy mail server       |
+| Subnet    | Hosts | IP Addresses                           | Purpose                |
+| --------- | ----- | -------------------------------------- | ---------------------- |
+| **cloud** | dns   | 94.130.183.229 / 2a01:4f8:1c0c:43dd::1 | Primary DNS (external) |
+|           | mail  | 195.201.17.234 / 2a01:4f8:1c0c:4a3b::1 | Mail server (Hetzner)  |
+|           | devel | 178.104.223.86 / 2a01:4f8:c015:1e1d::1 | Development (Hetzner)  |
 
 ### DNS Infrastructure
 
 #### Master-Slave Setup
 
-- **Master NS:** `desktop.dnstunnel.khms` (10.18.0.2) — Primary zone authority
-- **Slave NS:** `dns.dnstunnel.khms` (10.18.0.1) — Secondary; receives AXFR from master
+- **Master NS:** `desktop.khms` (10.18.0.2) — Primary zone authority
+- **Slave NS:** `dns.khms` (10.18.0.1) — Secondary; receives AXFR from master
 - **External DNS:** `dns.cloud` (94.130.183.229) — Public-facing nameserver (Hetzner)
 
 #### Zone Hierarchy
@@ -76,34 +72,29 @@ The infrastructure spans three network layers: **internal subnets** (LAN), **tun
 
 The `[domains]` section defines public hostnames (DNS aliases):
 
-- `dns` → Publicly visible nameserver
-- `mail` → Mail server alias
-- `mail-server` → Mail server (alternative)
-- `dns-server` → Nameserver (alternative)
+- `dns` → Publicly visible nameserver; also alternative outgoing mail server
+- `mail` → Publicly visible Mail server (currently inoperable)
+- `mail-server` → Mail server (alias)
+- `dns-server` → Nameserver (alias)
 - `devel` → Development machine
-- `www` → Alias for oldroot (legacy web)
-- `oldmail`, `oldroot` → Legacy services
 
 ### Service Routing
 
-#### Mail Service
+#### Mail Service (when server works again)
 
-- **Primary:** `mail.cloud` (195.201.17.234) — External-facing mail server
-- **Tunnel:** `mail.mailtunnel` (10.28.0.1) — Internal tunnel access
-- **Route override:** `pick=mail=mailtunnel` → Mail host uses mailtunnel subnet
+- **Primary:** `mail-server.khms1.de` (195.201.17.234) — External-facing mail server
+- **Tunnel:** `mail.mailtunnel.khms` (10.28.0.1) — Internal tunnel endpoint on the mail-server
 
 #### DNS Service
 
-- **Primary:** `dns.cloud` (94.130.183.229) — External nameserver (public)
-- **Master:** `desktop.dnstunnel.khms` (10.18.0.2) — Zone authority
-- **Slave:** `dns.dnstunnel.khms` (10.18.0.1) — Secondary NS
-- **Route override:** `pick=dns=dnstunnel` → DNS host uses dnstunnel subnet
+- **Master:** `desktop.dnstunnel.khms` (10.18.0.2) — Zone authority, invisible externally
+- **Slave/Primary:** `dns-server.khms1.de` (94.130.183.229) — External nameserver (public)
+- **Tunnel:** `dns.dnstunnel.khms` (10.18.0.1) — Internal tunnel endpoint on the dns-server
 
 #### Desktop/Workstation
 
-- **Route:** `pick=desktop=west` → Desktop uses west internal subnet
-- **Primary:** `desktop.west` (192.168.87.2) — Internal access
-- **Tunnel masters:** Appears in dnstunnel (10.18.0.2) and mailtunnel (10.28.0.2)
+- **Primary:** `desktop.west.khms` (192.168.87.2) — Internal access
+- **Tunnel:** `desktop.dnstunnel.khms` (10.18.0.2) and `desktop.mailtunnel.khms` (10.28.0.2) — Internal tunnel endpoint on the desktop
 
 ### Configuration Structure
 
@@ -170,8 +161,6 @@ named-checkzone khms1.de khms1.de.zone
 | `network.ini`          | Central configuration (network topology + zone records) |
 | `*.zone`               | Generated BIND zone files (auto-created)                |
 | `khms-zones.conf`      | Generated BIND master config (auto-created)             |
-| `attrs/`               | Network attributes directory (reserved for future use)  |
-| `bak/`                 | Backups of generator.pl (historical, can be pruned)     |
 | `README.md`            | User-facing documentation                               |
 | `README-deployment.md` | Deployment procedures                                   |
 
@@ -419,9 +408,11 @@ refactor(generator): remove debug output statements
 
 1. Generate zones: `perl generator.pl`
 2. Validate all zones:
+
    ```bash
    for zone in *.zone; do named-checkzone "${zone%.zone}" "$zone" || exit 1; done
    ```
+
 3. Deploy to master: `sudo ./deploy-zones.sh khms-zones.conf *.zone`
 4. Verify with `dig @localhost` queries
 
