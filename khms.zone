@@ -1,7 +1,7 @@
 ; khms.zone
 
 khms.	86400	IN	SOA	( ns0.khms1.de. root.khms1.de.
-				2026070217	;serial
+				2026070307	;serial
 				43200		;refresh
 				7200		;retry
 				2419200		;expire
@@ -31,6 +31,7 @@ east-n.north.khms.	86400	IN	A	192.168.2.100
 east-n.north.khms.	86400	IN	MX	10 mail.khms.
 east.east.khms.	86400	IN	A	192.168.88.14
 east.east.khms.	86400	IN	MX	10 mail.khms.
+khms.	86400	IN	MX	10 mail.khms.
 laptop.east.khms.	86400	IN	A	192.168.88.44
 laptop.east.khms.	86400	IN	MX	10 mail.khms.
 laptop.west.khms.	86400	IN	A	192.168.87.44
