@@ -462,7 +462,7 @@ refactor(generator): remove debug output statements
 
    # Deploy to mail server
    sudo ./deploy-zones.sh --exim-mail exim/mail 195.201.17.234 \
-     khms-zones.conf *.zone
+     khms-zones.conf *.zone -- 10.28.0.1 khms-zones.conf.tmp
    ```
 
 3. Verify Exim restarted: `systemctl status exim4` on each machine
