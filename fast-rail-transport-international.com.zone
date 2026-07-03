@@ -2,7 +2,7 @@
 
 fast-rail-transport-international.com.	86400	IN	SOA	( ns0.khms1.de.
 	root.khms1.de.
-				2026070321	;serial
+				2026070323	;serial
 				43200		;refresh
 				7200		;retry
 				2419200		;expire
@@ -23,6 +23,7 @@ dns-server.fast-rail-transport-international.com.	86400	IN	AAAA	(
 	2a01:4f8:1c0c:43dd::1 )
 dns-server.fast-rail-transport-international.com.	86400	IN	MX	(
 	10 mail.fast-rail-transport-international.com. )
+dns-server.fast-rail-transport-international.com.	86400	IN	TXT	"v=spf1 ip4:94.130.183.229 ip6:2a01:4f8:1c0c:43dd::1 ~all"
 dns.fast-rail-transport-international.com.	86400	IN	A	94.130.183.229
 dns.fast-rail-transport-international.com.	86400	IN	AAAA	(
 	2a01:4f8:1c0c:43dd::1 )
