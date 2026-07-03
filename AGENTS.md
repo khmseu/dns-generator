@@ -143,6 +143,29 @@ sudo ./deploy-zones.sh khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
 
 The `-- SLAVE_IP CONFIG_ON_SLAVE` syntax triggers slave deployment. Includes a critical 120-second delay before slave restart to allow zone transfer persistence.
 
+### Deploy Exim Configuration (Optional)
+
+Deploy mail authentication (DKIM) configuration to DNS and mail servers:
+
+```bash
+# Deploy to master (desktop) only
+sudo ./deploy-zones.sh --exim-master exim/master khms-zones.conf *.zone
+
+# Deploy to master and slave
+sudo ./deploy-zones.sh --exim-master exim/master --exim-slave exim/slave \
+  khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
+
+# Deploy to slave and mail server (with zone deployment to slave)
+sudo ./deploy-zones.sh --exim-slave exim/slave --exim-mail exim/mail 195.201.17.234 \
+  khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
+```
+
+All Exim configurations use the same private key but differ in the DKIM signing domain:
+
+- `exim/master` → Signs as khms.eu (desktop server)
+- `exim/slave` → Signs as khms1.de (dns server)
+- `exim/mail` → Signs as khms1.de (mail server at 195.201.17.234)
+
 ### Validate Generated Zones
 
 ```bash
@@ -154,15 +177,19 @@ named-checkzone khms1.de khms1.de.zone
 
 ## Project Structure
 
-| Path                   | Purpose                                                 |
-| ---------------------- | ------------------------------------------------------- |
-| `generator.pl`         | Main zone generator (Perl, ~890 lines)                  |
-| `deploy-zones.sh`      | Privileged deployment script (Bash, ~120 lines)         |
-| `network.ini`          | Central configuration (network topology + zone records) |
-| `*.zone`               | Generated BIND zone files (auto-created)                |
-| `khms-zones.conf`      | Generated BIND master config (auto-created)             |
-| `README.md`            | User-facing documentation                               |
-| `README-deployment.md` | Deployment procedures                                   |
+| Path                   | Purpose                                                            |
+| ---------------------- | ------------------------------------------------------------------ |
+| `generator.pl`         | Main zone generator (Perl, ~890 lines)                             |
+| `deploy-zones.sh`      | Privileged deployment script (Bash, supports zones + Exim configs) |
+| `network.ini`          | Central configuration (network topology + zone records)            |
+| `exim/`                | Exim4 configuration files for DNS/mail servers                     |
+| `exim/master/00_khms`  | DKIM config for master DNS server (signs as khms.eu)               |
+| `exim/slave/00_khms`   | DKIM config for slave DNS server (signs as khms1.de)               |
+| `exim/mail/00_khms`    | DKIM config for mail server (signs as khms1.de)                    |
+| `*.zone`               | Generated BIND zone files (auto-created)                           |
+| `khms-zones.conf`      | Generated BIND master config (auto-created)                        |
+| `README.md`            | User-facing documentation                                          |
+| `README-deployment.md` | Deployment procedures                                              |
 
 ---
 
@@ -415,6 +442,31 @@ refactor(generator): remove debug output statements
 
 3. Deploy to master: `sudo ./deploy-zones.sh khms-zones.conf *.zone`
 4. Verify with `dig @localhost` queries
+
+### Modifying Exim Configuration
+
+1. Edit the appropriate config file:
+   - `exim/master/00_khms` — For master (desktop)
+   - `exim/slave/00_khms` — For slave (dns)
+   - `exim/mail/00_khms` — For mail server
+
+2. Deploy to affected machines:
+
+   ```bash
+   # Deploy to master only
+   sudo ./deploy-zones.sh --exim-master exim/master khms-zones.conf *.zone
+
+   # Deploy to master and slave
+   sudo ./deploy-zones.sh --exim-master exim/master --exim-slave exim/slave \
+     khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
+
+   # Deploy to mail server
+   sudo ./deploy-zones.sh --exim-mail exim/mail 195.201.17.234 \
+     khms-zones.conf *.zone
+   ```
+
+3. Verify Exim restarted: `systemctl status exim4` on each machine
+4. Test with test email to verify DKIM signing
 
 ---
 
