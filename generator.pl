@@ -330,14 +330,17 @@ sub main() {
             else {
                 if ( exists $subnets{$subnet_name}{$hostname} ) {
                     my $address_data = $subnets{$subnet_name}{$hostname};
+
                     # Handle both scalar and array values (multiple addresses)
                     my @addresses = ref($address_data) eq 'ARRAY' ? @$address_data : ($address_data);
 
                     for my $addr (@addresses) {
+
                         # Check if it's an IPv6 address (contains colons)
-                        if ($addr =~ /:/) {
+                        if ( $addr =~ /:/ ) {
                             $hosts{$hostname}{net6}{$subnet_name} = $addr;
-                        } else {
+                        }
+                        else {
                             # IPv4 address
                             $hosts{$hostname}{net4}{$subnet_name} = inet_aton($addr);
                         }
@@ -505,7 +508,7 @@ sub main() {
             $output{"$internal_domain"}{ $record_obj->string }++;
 
             # External AAAA records
-            if (    not exists $subnets{$subnet_name}{num}
+            if ( not exists $subnets{$subnet_name}{num}
                 and exists $externally_visible{$hostname} )
             {
                 for my $domain_name (@external_domains) {

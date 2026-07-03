@@ -1,0 +1,79 @@
+Received: from Debian-exim by DNS-Server with local (Exim 4.99.1)
+	id 1wfUlp-0000000GwmF-1ItU
+	for root@dns-server.khms1.de;
+	Fri, 03 Jul 2026 05:40:53 +0200
+X-Failed-Recipients: kai.extern+test@gmail.com
+Auto-Submitted: auto-replied
+From: Mail Delivery System <Mailer-Daemon@dns-server.khms1.de>
+To: root@dns-server.khms1.de
+References: <E1wfUlo-0000000Gwm5-3iwK@DNS-Server>
+Content-Type: multipart/report; report-type=delivery-status; boundary=1783050053-eximdsn-1804289383
+MIME-Version: 1.0
+Subject: Mail delivery failed: returning message to sender
+Message-Id: <E1wfUlp-0000000GwmF-1ItU@DNS-Server>
+Date: Fri, 03 Jul 2026 05:40:53 +0200
+
+--1783050053-eximdsn-1804289383
+Content-type: text/plain; charset=us-ascii
+
+This message was created automatically by mail delivery software.
+
+A message that you sent could not be delivered to one or more of its
+recipients. This is a permanent error. The following address(es) failed:
+
+  kai.extern+test@gmail.com
+    host gmail-smtp-in.l.google.com [2a00:1450:4001:c21::1b]
+    SMTP error from remote mail server after pipelined end of data:
+    550-5.7.26 Your email has been blocked because the sender is unauthenticated.
+    550-5.7.26 Gmail requires all senders to authenticate with either SPF or DKIM.
+    550-5.7.26
+    550-5.7.26  Authentication results:
+    550-5.7.26  DKIM = did not pass
+    550-5.7.26  SPF [dns-server.khms1.de] with ip:
+    [2a01:4f8:1c0c:43dd::1] = did not
+    550-5.7.26 pass
+    550-5.7.26
+    550-5.7.26  For instructions on setting up authentication, go to
+    550 5.7.26  https://support.google.com/mail/answer/81126#authentication ffacd0b85a97d-477de5c7965si9951447f8f.291 - gsmtp
+
+--1783050053-eximdsn-1804289383
+Content-type: message/delivery-status
+
+Reporting-MTA: dns; DNS-Server
+
+Action: failed
+Final-Recipient: rfc822;kai.extern+test@gmail.com
+Status: 5.0.0
+Remote-MTA: dns; gmail-smtp-in.l.google.com
+Diagnostic-Code: smtp; 550-5.7.26 Your email has been blocked because the sender is unauthenticated.
+ 550-5.7.26 Gmail requires all senders to authenticate with either SPF or DKIM.
+ 550-5.7.26
+ 550-5.7.26  Authentication results:
+ 550-5.7.26  DKIM = did not pass
+ 550-5.7.26  SPF [dns-server.khms1.de] with ip: [2a01:4f8:1c0c:43dd::1] = did not
+ 550-5.7.26 pass
+ 550-5.7.26
+ 550-5.7.26  For instructions on setting up authentication, go to
+ 550 5.7.26  https://support.google.com/mail/answer/81126#authentication ffacd0b85a97d-477de5c7965si9951447f8f.291 - gsmtp
+
+--1783050053-eximdsn-1804289383
+Content-type: message/rfc822
+
+Return-path: <root@dns-server.khms1.de>
+Received: from root by DNS-Server with local (Exim 4.99.1)
+	(envelope-from <root@dns-server.khms1.de>)
+	id 1wfUlo-0000000Gwm5-3iwK
+	for kai.extern+test@gmail.com;
+	Fri, 03 Jul 2026 05:40:52 +0200
+To: kai.extern+test@gmail.com
+Subject: test mal wieder
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <E1wfUlo-0000000Gwm5-3iwK@DNS-Server>
+From: root <root@dns-server.khms1.de>
+Date: Fri, 03 Jul 2026 05:40:52 +0200
+
+immer noch
+
+--1783050053-eximdsn-1804289383--
