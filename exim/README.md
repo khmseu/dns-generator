@@ -4,8 +4,8 @@ This directory contains Exim4 mail server configuration files for different depl
 
 ## Structure
 
-- `master/00_khms` - Configuration for master DNS server (desktop.dnstunnel.khms)
-- `slave/00_khms` - Configuration for slave DNS server (dns.dnstunnel.khms)
+- `desktop/00_khms` - Configuration for desktop system (master DNS: desktop.dnstunnel.khms)
+- `dns/00_khms` - Configuration for dns system (slave DNS: dns.dnstunnel.khms)
 - `mail/00_khms` - Configuration for mail server (mail.cloud)
 
 ## Purpose
@@ -23,11 +23,11 @@ All configurations use:
 
 But differ in the signing domain:
 
-| Target | Machine                | DKIM_DOMAIN |
-| ------ | ---------------------- | ----------- |
-| Master | desktop.dnstunnel.khms | khms.eu     |
-| Slave  | dns.dnstunnel.khms     | khms1.de    |
-| Mail   | mail.cloud             | khms1.de    |
+| System  | Machine                | DKIM_DOMAIN |
+| ------- | ---------------------- | ----------- |
+| Desktop | desktop.dnstunnel.khms | khms.eu     |
+| DNS     | dns.dnstunnel.khms     | khms1.de    |
+| Mail    | mail.cloud             | khms1.de    |
 
 ## Deployment
 

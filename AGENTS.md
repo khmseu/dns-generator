@@ -148,22 +148,22 @@ The `-- SLAVE_IP CONFIG_ON_SLAVE` syntax triggers slave deployment. Includes a c
 Deploy mail authentication (DKIM) configuration to DNS and mail servers:
 
 ```bash
-# Deploy to master (desktop) only
-sudo ./deploy-zones.sh --exim-master exim/master khms-zones.conf *.zone
+# Deploy to desktop (master DNS) only
+sudo ./deploy-zones.sh --exim-desktop exim/desktop khms-zones.conf *.zone
 
-# Deploy to master and slave
-sudo ./deploy-zones.sh --exim-master exim/master --exim-slave exim/slave \
+# Deploy to desktop and dns servers
+sudo ./deploy-zones.sh --exim-desktop exim/desktop --exim-dns exim/dns \
   khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
 
-# Deploy to slave and mail server (with zone deployment to slave)
-sudo ./deploy-zones.sh --exim-slave exim/slave --exim-mail exim/mail 195.201.17.234 \
+# Deploy to dns and mail servers (with zone deployment to dns)
+sudo ./deploy-zones.sh --exim-dns exim/dns --exim-mail exim/mail 195.201.17.234 \
   khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
 ```
 
 All Exim configurations use the same private key but differ in the DKIM signing domain:
 
-- `exim/master` → Signs as khms.eu (desktop server)
-- `exim/slave` → Signs as khms1.de (dns server)
+- `exim/desktop` → Signs as khms.eu (desktop server)
+- `exim/dns` → Signs as khms1.de (dns server)
 - `exim/mail` → Signs as khms1.de (mail server at 195.201.17.234)
 
 ### Validate Generated Zones
@@ -183,8 +183,8 @@ named-checkzone khms1.de khms1.de.zone
 | `deploy-zones.sh`      | Privileged deployment script (Bash, supports zones + Exim configs) |
 | `network.ini`          | Central configuration (network topology + zone records)            |
 | `exim/`                | Exim4 configuration files for DNS/mail servers                     |
-| `exim/master/00_khms`  | DKIM config for master DNS server (signs as khms.eu)               |
-| `exim/slave/00_khms`   | DKIM config for slave DNS server (signs as khms1.de)               |
+| `exim/desktop/00_khms` | DKIM config for desktop system (signs as khms.eu)                  |
+| `exim/dns/00_khms`     | DKIM config for dns system (signs as khms1.de)                     |
 | `exim/mail/00_khms`    | DKIM config for mail server (signs as khms1.de)                    |
 | `*.zone`               | Generated BIND zone files (auto-created)                           |
 | `khms-zones.conf`      | Generated BIND master config (auto-created)                        |
@@ -446,18 +446,18 @@ refactor(generator): remove debug output statements
 ### Modifying Exim Configuration
 
 1. Edit the appropriate config file:
-   - `exim/master/00_khms` — For master (desktop)
-   - `exim/slave/00_khms` — For slave (dns)
+   - `exim/desktop/00_khms` — For desktop (master DNS)
+   - `exim/dns/00_khms` — For dns (slave DNS)
    - `exim/mail/00_khms` — For mail server
 
 2. Deploy to affected machines:
 
    ```bash
-   # Deploy to master only
-   sudo ./deploy-zones.sh --exim-master exim/master khms-zones.conf *.zone
+   # Deploy to desktop only
+   sudo ./deploy-zones.sh --exim-desktop exim/desktop khms-zones.conf *.zone
 
-   # Deploy to master and slave
-   sudo ./deploy-zones.sh --exim-master exim/master --exim-slave exim/slave \
+   # Deploy to desktop and dns
+   sudo ./deploy-zones.sh --exim-desktop exim/desktop --exim-dns exim/dns \
      khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
 
    # Deploy to mail server
