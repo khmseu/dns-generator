@@ -1,7 +1,7 @@
 ; khms.eu.zone
 
 khms.eu.	86400	IN	SOA	( ns0.khms1.de. root.khms1.de.
-				2026070307	;serial
+				2026070319	;serial
 				43200		;refresh
 				7200		;retry
 				2419200		;expire
@@ -13,19 +13,25 @@ khms.eu.	IN	NS	robotns2.second-ns.de.
 _dmarc.khms.eu.	86400	IN	TXT	"v=DMARC1; p=quarantine;"
 desktop_1._domainkey.khms.eu.	86400	IN	TXT	( "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr1tkbQWCmoLxa6/3cbZbW0pVH/EtqGP24Qvb08WfncSH+cI37oTJFcxScJNGjfPaVnY46NhJkb2cAgvCcGWrcZIYjax59BmmkWNzf73iV3ukR05WeE83SwL/X82CqY7edDmiS+Sbj2im601WbZKFC6FNmLM0FUUVovqIK57jES7jHubzaBnA8jLpqxIQ7RUaf" "8u7t1mmK0JBi6sg0JBIgwcugIpBFUQd4gHsiMmW5dYIFvK68uCRvypIYC74IqJjDEcWjrKBvGAlC4SZpRPPSKfZ0Z858BLiyvd1K8eTlTNpQIrhZC9EDheUKiYE3j6TyR4+XepKV0E2MndVONwgywIDAQAB" )
 devel.khms.eu.	86400	IN	A	178.104.223.86
+devel.khms.eu.	86400	IN	AAAA	2a01:4f8:c015:1e1d::1
 devel.khms.eu.	86400	IN	MX	10 mail.khms.eu.
 dns-server.khms.eu.	86400	IN	A	94.130.183.229
+dns-server.khms.eu.	86400	IN	AAAA	2a01:4f8:1c0c:43dd::1
 dns-server.khms.eu.	86400	IN	MX	10 mail.khms.eu.
 dns.khms.eu.	86400	IN	A	94.130.183.229
+dns.khms.eu.	86400	IN	AAAA	2a01:4f8:1c0c:43dd::1
 dns.khms.eu.	86400	IN	MX	10 mail.khms.eu.
 dns_1._domainkey.khms.eu.	86400	IN	TXT	( "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAj2FEG8D4e7XwNovCIZOab5TDNm+Roe7chU3PeOQNPKqHH5Dd2N7c/qg8UmSjmwPftLgK/Iu1ly64vOl7JTIPD9WRxnaqj9Sw2Vd3NfQUbcY/7UGSbxWljr3kZPbupFKyr+8TdXqLwXyP2FBO+ITbm4+8iAyp5QT4B5gNXkT+0L2OXUU9eF///4p2SRKBq789Z" "UsvC5CAdO0EX1Ih8d3xulvkKbYX7HO2Z410j84PPzN4PtHlybk8RV0qUdZk+XxDqNbxjG6BmV50mp3zwlpWjAMmn6fqagCV1YcMYuJ1KDHGP6xkbh+3bhTj9ZYGUCn/0L5+ZmSOquhXTOt1LXDSXQIDAQAB" )
 khms.eu.	86400	IN	MX	10 mail.khms.eu.
-khms.eu.	86400	IN	TXT	"v=spf1 ip4:94.130.183.229 ip4:195.201.17.234 ip4:178.104.223.86 ~all"
+khms.eu.	86400	IN	TXT	"v=spf1 ip4:94.130.183.229 ip4:195.201.17.234 ip4:178.104.223.86 ip6:2a01:4f8:1c0c:4a3b::1 ~all"
 mail-server.khms.eu.	86400	IN	A	195.201.17.234
+mail-server.khms.eu.	86400	IN	AAAA	2a01:4f8:1c0c:4a3b::1
 mail-server.khms.eu.	86400	IN	MX	10 mail.khms.eu.
 mail.khms.eu.	86400	IN	A	195.201.17.234
+mail.khms.eu.	86400	IN	AAAA	2a01:4f8:1c0c:4a3b::1
 mail.khms.eu.	86400	IN	MX	10 mail.khms.eu.
 ns0.khms.eu.	86400	IN	A	94.130.183.229
+ns0.khms.eu.	86400	IN	AAAA	2a01:4f8:1c0c:43dd::1
 ns0.khms.eu.	86400	IN	MX	10 mail.khms.eu.
 oldmail.khms.eu.	86400	IN	A	188.40.57.58
 oldmail.khms.eu.	86400	IN	MX	10 mail.khms.eu.

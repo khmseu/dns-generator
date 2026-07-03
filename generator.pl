@@ -287,7 +287,9 @@ sub main() {
                     $subnet_temp{$param_name} = [ @{ $network{$subnet_name}{$param_name} } ];
                 }
                 else {
-                    $subnet_temp{$param_name} = $network{$subnet_name}{$param_name}[0];
+                    # Store all values for parameters with multiple entries (e.g., multiple IP addresses)
+                    my @param_values = @{ $network{$subnet_name}{$param_name} };
+                    $subnet_temp{$param_name} = @param_values > 1 ? [@param_values] : $param_values[0];
                 }
             }
             $subnets{$subnet_name} = {%subnet_temp};
@@ -326,8 +328,21 @@ sub main() {
                 $hosts{$hostname}{net4}{$subnet_name} = addv4 $current_net, $hosts{$hostname}{num4};
             }
             else {
-                $hosts{$hostname}{net4}{$subnet_name} = inet_aton( $subnets{$subnet_name}{$hostname} )
-                  if exists $subnets{$subnet_name}{$hostname};
+                if ( exists $subnets{$subnet_name}{$hostname} ) {
+                    my $address_data = $subnets{$subnet_name}{$hostname};
+                    # Handle both scalar and array values (multiple addresses)
+                    my @addresses = ref($address_data) eq 'ARRAY' ? @$address_data : ($address_data);
+
+                    for my $addr (@addresses) {
+                        # Check if it's an IPv6 address (contains colons)
+                        if ($addr =~ /:/) {
+                            $hosts{$hostname}{net6}{$subnet_name} = $addr;
+                        } else {
+                            # IPv4 address
+                            $hosts{$hostname}{net4}{$subnet_name} = inet_aton($addr);
+                        }
+                    }
+                }
                 $external_subnets{$subnet_name}{$hostname}++;
             }
         }
@@ -470,6 +485,54 @@ sub main() {
         $addr_map{ $record_obj->owner } = $record_obj->address;
         $output{$internal_domain}{ $record_obj->string }++;
         add_more "$pick_alias.$internal_domain", $internal_domain, 1;
+    }
+
+    # ========================================================================
+    # AAAA (IPv6) record generation
+    # ========================================================================
+    for my $hostname ( sort keys %hosts ) {
+        next unless exists $hosts{$hostname}{net6};
+        for my $subnet_name ( sort keys %{ $hosts{$hostname}{net6} } ) {
+            my $ipv6_address = $hosts{$hostname}{net6}{$subnet_name};
+
+            # Internal AAAA records
+            my $record_obj = Net::DNS::RR->new(
+                owner   => "$hostname.$subnet_name.$internal_domain",
+                ttl     => 60 * 60 * 24,
+                type    => 'AAAA',
+                address => $ipv6_address,
+            );
+            $output{"$internal_domain"}{ $record_obj->string }++;
+
+            # External AAAA records
+            if (    not exists $subnets{$subnet_name}{num}
+                and exists $externally_visible{$hostname} )
+            {
+                for my $domain_name (@external_domains) {
+                    my $record_obj = Net::DNS::RR->new(
+                        owner   => "$hostname.$domain_name",
+                        ttl     => 60 * 60 * 24,
+                        type    => 'AAAA',
+                        address => $ipv6_address,
+                    );
+                    $output{$domain_name}{ $record_obj->string }++;
+
+                    # Handle aliases for external domains
+                    for my $alias_name ( keys %externally_visible ) {
+                        my $target_host = $externally_visible{$alias_name};
+                        if ( $target_host && $target_host eq $hostname ) {
+                            $record_obj = Net::DNS::RR->new(
+                                owner   => "$alias_name.$domain_name",
+                                ttl     => 60 * 60 * 24,
+                                type    => 'AAAA',
+                                address => $ipv6_address,
+                            );
+                            $output{$domain_name}{ $record_obj->string }++;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     # ============================================================================

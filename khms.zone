@@ -1,7 +1,7 @@
 ; khms.zone
 
 khms.	86400	IN	SOA	( ns0.khms1.de. root.khms1.de.
-				2026070307	;serial
+				2026070319	;serial
 				43200		;refresh
 				7200		;retry
 				2419200		;expire
@@ -18,10 +18,12 @@ desktop.mailtunnel.khms.	86400	IN	MX	10 mail.khms.
 desktop.west.khms.	86400	IN	A	192.168.87.2
 desktop.west.khms.	86400	IN	MX	10 mail.khms.
 devel.cloud.khms.	86400	IN	A	178.104.223.86
+devel.cloud.khms.	86400	IN	AAAA	2a01:4f8:c015:1e1d::1
 devel.cloud.khms.	86400	IN	MX	10 mail.khms.
 devel.khms.	86400	IN	A	178.104.223.86
 devel.khms.	86400	IN	MX	10 mail.khms.
 dns.cloud.khms.	86400	IN	A	94.130.183.229
+dns.cloud.khms.	86400	IN	AAAA	2a01:4f8:1c0c:43dd::1
 dns.cloud.khms.	86400	IN	MX	10 mail.khms.
 dns.dnstunnel.khms.	86400	IN	A	10.18.0.1
 dns.dnstunnel.khms.	86400	IN	MX	10 mail.khms.
@@ -37,6 +39,7 @@ laptop.east.khms.	86400	IN	MX	10 mail.khms.
 laptop.west.khms.	86400	IN	A	192.168.87.44
 laptop.west.khms.	86400	IN	MX	10 mail.khms.
 mail.cloud.khms.	86400	IN	A	195.201.17.234
+mail.cloud.khms.	86400	IN	AAAA	2a01:4f8:1c0c:4a3b::1
 mail.cloud.khms.	86400	IN	MX	10 mail.khms.
 mail.khms.	86400	IN	A	10.28.0.1
 mail.khms.	86400	IN	MX	10 mail.khms.
