@@ -16,6 +16,117 @@
 
 ---
 
+## Network Topology
+
+### Overview
+
+The infrastructure spans three network layers: **internal subnets** (LAN), **tunnel subnets** (VPN/SSH), and **external cloud** (Hetzner). All hosts are centrally defined in `network.ini`.
+
+### Machines & Locations
+
+#### Internal Subnets (192.168.0.0/16)
+
+| Subnet        | CIDR            | Hosts                 | Purpose                   |
+| ------------- | --------------- | --------------------- | ------------------------- |
+| **west**      | 192.168.87.0/24 | desktop, laptop, west | Development/workstations  |
+| **east**      | 192.168.88.0/24 | laptop, west, east    | Optional secondary zone   |
+| **north**     | 192.168.2.0/24  | east-n, north         | Development zone (sparse) |
+| **north_old** | 192.168.89.0/24 | (empty)               | Legacy, not in use        |
+
+#### Tunnel Subnets (VPN/SSH Tunnels)
+
+| Tunnel         | IP Range     | Hosts                                 | Role                         |
+| -------------- | ------------ | ------------------------------------- | ---------------------------- |
+| **dnstunnel**  | 10.18.0.0/24 | dns (10.18.0.1), desktop (10.18.0.2)  | DNS master-slave replication |
+| **mailtunnel** | 10.28.0.0/24 | mail (10.28.0.1), desktop (10.28.0.2) | Mail server tunnel           |
+| **tunnel**     | 10.8.0.0/24  | dns, mail, desktop                    | Legacy multi-service tunnel  |
+
+#### External (Hetzner Cloud + Legacy)
+
+| Subnet      | Hosts     | IP Addresses                           | Purpose                  |
+| ----------- | --------- | -------------------------------------- | ------------------------ |
+| **cloud**   | dns       | 94.130.183.229 / 2a01:4f8:1c0c:43dd::1 | Primary DNS (external)   |
+|             | mail      | 195.201.17.234 / 2a01:4f8:1c0c:4a3b::1 | Mail server (Hetzner)    |
+|             | devel     | 178.104.223.86 / 2a01:4f8:c015:1e1d::1 | Development (Hetzner)    |
+| **gws**     | westfalen | 78.47.110.152                          | Secondary cloud provider |
+| **rootsvr** | oldroot   | 188.40.57.14                           | Legacy root server       |
+|             | oldmail   | 188.40.57.58                           | Legacy mail server       |
+
+### DNS Infrastructure
+
+#### Master-Slave Setup
+
+- **Master NS:** `desktop.dnstunnel.khms` (10.18.0.2) — Primary zone authority
+- **Slave NS:** `dns.dnstunnel.khms` (10.18.0.1) — Secondary; receives AXFR from master
+- **External DNS:** `dns.cloud` (94.130.183.229) — Public-facing nameserver (Hetzner)
+
+#### Zone Hierarchy
+
+- **External zones** (public DNS):
+  - `khms.eu` — Primary external domain
+  - `khms1.de` — Secondary external domain
+  - `fast-rail-transport-international.com` — Additional external domain
+- **Internal zone** (private):
+  - `khms` — Internal domain for LAN resources
+- **Reverse zones** (PTR records):
+  - `10.in-addr.arpa` — Reverse for 10.0.0.0/8 (tunnels)
+  - `168.192.in-addr.arpa` — Reverse for 192.168.0.0/16 (internal)
+
+#### DNS Aliases & Visibility
+
+The `[domains]` section defines public hostnames (DNS aliases):
+
+- `dns` → Publicly visible nameserver
+- `mail` → Mail server alias
+- `mail-server` → Mail server (alternative)
+- `dns-server` → Nameserver (alternative)
+- `devel` → Development machine
+- `www` → Alias for oldroot (legacy web)
+- `oldmail`, `oldroot` → Legacy services
+
+### Service Routing
+
+#### Mail Service
+
+- **Primary:** `mail.cloud` (195.201.17.234) — External-facing mail server
+- **Tunnel:** `mail.mailtunnel` (10.28.0.1) — Internal tunnel access
+- **Route override:** `pick=mail=mailtunnel` → Mail host uses mailtunnel subnet
+
+#### DNS Service
+
+- **Primary:** `dns.cloud` (94.130.183.229) — External nameserver (public)
+- **Master:** `desktop.dnstunnel.khms` (10.18.0.2) — Zone authority
+- **Slave:** `dns.dnstunnel.khms` (10.18.0.1) — Secondary NS
+- **Route override:** `pick=dns=dnstunnel` → DNS host uses dnstunnel subnet
+
+#### Desktop/Workstation
+
+- **Route:** `pick=desktop=west` → Desktop uses west internal subnet
+- **Primary:** `desktop.west` (192.168.87.2) — Internal access
+- **Tunnel masters:** Appears in dnstunnel (10.18.0.2) and mailtunnel (10.28.0.2)
+
+### Configuration Structure
+
+**File:** `network.ini`
+
+- `[hosts]` — Host identifiers (north=1, desktop=2, laptop=44, etc.)
+- `[subnets]` — Subnet assignments (west=87 → 192.168.87.0/24, cloud=EXTERN, etc.)
+- `[domains]` — Public domains and routing rules
+- `[networks]` — Global settings (IPv4 base, admin email, nameservers)
+- `[zone_records]` — MX, SPF, DMARC, DKIM records for each zone
+- `[west]`, `[east]`, `[north]` — Internal subnet members
+- `[cloud]`, `[dnstunnel]`, `[mailtunnel]` — External/tunnel subnet members with IP addresses
+
+### Key Insights
+
+- **Dual connectivity:** Mail and DNS services are accessible both internally (via tunnels) and externally (Hetzner Cloud)
+- **Master-slave consistency:** Zone transfers replicate all DNS records from master (desktop) to slave (dns) via NOTIFY mechanism
+- **Multi-path routing:** `pick=` rules in `[domains]` allow hosts to use different subnets for different purposes
+- **DKIM alignment:** Mail signing uses `khms1.de` domain on slave, `khms.eu` on master (both published at same domain for SPF/DMARC)
+- **Reverse DNS:** PTR records automatically generated for both 10.x (tunnels) and 192.168.x (internal) ranges
+
+---
+
 ## Essential Commands
 
 ### Generate Zones
