@@ -1,21 +1,44 @@
 #!/bin/bash
 
 # deploy-zones.sh - Deploy generated zone files, BIND configuration, and Exim configs
-# This script requires sudo privileges to copy files and restart services
+# This script requires sudo privileges to copy files and restart services.
+# Restarts BIND9 on master; optionally transfers zones to slave with 120-second delay
+# to ensure zone transfer persistence before restart.
 #
-# Usage: sudo ./deploy-zones.sh [options] <config_file> <zone_file1> [zone_file2 ...] [-- <slave_ip> <slave_config>]
+# USAGE
+#   sudo ./deploy-zones.sh [OPTIONS] <config_file> <zone_file1> [zone_file2 ...]
+#   sudo ./deploy-zones.sh [OPTIONS] <config_file> <zone_file1> [...] -- <slave_ip> <slave_config>
 #
-# Master deployment:
-#   sudo ./deploy-zones.sh khms-zones.conf 10.in-addr.arpa.zone 168.192.in-addr.arpa.zone ...
+# OPTIONS (all optional)
+#   --exim-desktop DIR     Deploy Exim DKIM config to desktop (master DNS server)
+#   --exim-dns DIR         Deploy Exim DKIM config to dns server (slave DNS server)
+#   --exim-mail DIR IP     Deploy Exim DKIM config to mail server at IP address
 #
-# Master + Slave deployment:
-#   sudo ./deploy-zones.sh khms-zones.conf 10.in-addr.arpa.zone ... -- 10.18.0.1 khms-zones.conf.tmp
+# POSITIONAL ARGUMENTS (required)
+#   config_file            BIND master config file to deploy (e.g., khms-zones.conf)
+#   zone_file1 [...]       Zone files to deploy (can use wildcards, e.g., *.zone)
+#   -- slave_ip slave_config    OPTIONAL: Enable slave deployment
+#                          -- SEPARATOR: Marks beginning of slave deployment parameters
+#                          slave_ip: IP address of slave DNS server (e.g., 10.18.0.1)
+#                          slave_config: Config file name for slave (e.g., khms-zones.conf.tmp)
 #
-# With Exim config deployment to dns server:
-#   sudo ./deploy-zones.sh --exim-dns exim/dns khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
+# EXAMPLES
+#   # Deploy zones to master only
+#   sudo ./deploy-zones.sh khms-zones.conf 10.in-addr.arpa.zone 168.192.in-addr.arpa.zone
 #
-# With Exim configs to multiple machines:
-#   sudo ./deploy-zones.sh --exim-desktop exim/desktop --exim-dns exim/dns --exim-mail exim/mail \
+#   # Deploy zones to master and slave
+#   sudo ./deploy-zones.sh khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
+#
+#   # Deploy zones and Exim configs to master only
+#   sudo ./deploy-zones.sh --exim-desktop exim/desktop khms-zones.conf *.zone
+#
+#   # Deploy zones and Exim configs to master and slave
+#   sudo ./deploy-zones.sh --exim-desktop exim/desktop --exim-dns exim/dns \
+#     khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
+#
+#   # Deploy zones and Exim configs to master, slave, and mail server
+#   sudo ./deploy-zones.sh --exim-desktop exim/desktop --exim-dns exim/dns \
+#     --exim-mail exim/mail 10.0.28.1 \
 #     khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
 
 set -e

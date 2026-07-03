@@ -156,11 +156,11 @@ sudo ./deploy-zones.sh --exim-desktop exim/desktop --exim-dns exim/dns \
   khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
 
 # Deploy to dns and mail servers (with zone deployment to dns)
-sudo ./deploy-zones.sh --exim-dns exim/dns --exim-mail exim/mail 195.201.17.234 \
+sudo ./deploy-zones.sh --exim-dns exim/dns --exim-mail exim/mail 10.0.28.1 \
   khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
 ```
 
-All Exim configurations use the same private key but differ in the DKIM signing domain:
+All Exim configurations use different private key and differ in the DKIM signing domain:
 
 - `exim/desktop` → Signs as khms.eu (desktop server)
 - `exim/dns` → Signs as khms1.de (dns server)
@@ -366,7 +366,7 @@ record.name.  TXT  ( "chunk1..."
 
 - Publish same public key at both domains (dns_1._domainkey.khms1.de + dns_1._domainkey.khms.eu)
 - Slave signs with DKIM_DOMAIN = khms1.de
-- Single key file used for both domains
+- Each machine stores its own private key at the same local path `/etc/exim4/dkim/khms.eu.key`, regardless of the DKIM signing domain. The filename does not reflect the signing domain; it is a fixed path used by all machines.
 
 ---
 
@@ -468,6 +468,15 @@ refactor(generator): remove debug output statements
 3. Verify Exim restarted: `systemctl status exim4` on each machine
 4. Test with test email to verify DKIM signing
 
+### Rotating DKIM Keys
+
+1. Generate a new DKIM key pair and use a new selector version (for example `dns_2`, then `dns_3`, etc.).
+2. Add new public key records in `[zone_records]` for both domains using the new selector (for example `dns_2._domainkey.khms.eu` and `dns_2._domainkey.khms1.de`).
+3. Update Exim selector/domain settings on affected machines to sign with the new selector. Each machine (`desktop`, `dns`, `mail`) must generate its own private key locally at `/etc/exim4/dkim/khms.eu.key`; do not transport private keys between machines.
+4. Run `perl generator.pl`, validate zones, and deploy.
+5. Keep the old selector records published by default so mail signed with old keys remains valid.
+6. Remove old selector records only when explicitly desired (after a suitable transition window and DNS TTL expiry).
+
 ---
 
 ## Important Notes & Gotchas
@@ -509,8 +518,8 @@ This tool requires understanding:
 
 - Master (`desktop.dnstunnel.khms`): DKIM_DOMAIN = khms.eu
 - Slave (`dns.dnstunnel.khms`): DKIM_DOMAIN = khms1.de
-- Both use same private key file but different signing domains
-- Intentional for mail routing flexibility during downtime
+- Each uses its own private key (different keys) stored at the same local path
+- Different signing domains enable mail routing flexibility during downtime
 
 ---
 
