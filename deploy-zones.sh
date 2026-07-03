@@ -1,23 +1,63 @@
 #!/bin/bash
 
-# deploy-zones.sh - Deploy generated zone files and configuration to BIND
+# deploy-zones.sh - Deploy generated zone files, BIND configuration, and Exim configs
 # This script requires sudo privileges to copy files and restart services
 #
-# Usage: sudo ./deploy-zones.sh <config_file> <zone_file1> [zone_file2 ...] [-- <slave_ip> <slave_config>]
+# Usage: sudo ./deploy-zones.sh [options] <config_file> <zone_file1> [zone_file2 ...] [-- <slave_ip> <slave_config>]
 #
 # Master deployment:
 #   sudo ./deploy-zones.sh khms-zones.conf 10.in-addr.arpa.zone 168.192.in-addr.arpa.zone ...
 #
 # Master + Slave deployment:
 #   sudo ./deploy-zones.sh khms-zones.conf 10.in-addr.arpa.zone ... -- 10.18.0.1 khms-zones.conf.tmp
+#
+# With Exim config deployment to slave:
+#   sudo ./deploy-zones.sh --exim-slave exim/slave khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
+#
+# With Exim configs to multiple machines:
+#   sudo ./deploy-zones.sh --exim-master exim/master --exim-slave exim/slave --exim-mail exim/mail \
+#     khms-zones.conf *.zone -- 10.18.0.1 khms-zones.conf.tmp
 
 set -e
 
+# Exim configuration directories (optional)
+EXIM_MASTER_DIR=""
+EXIM_SLAVE_DIR=""
+EXIM_MAIL_DIR=""
+EXIM_MAIL_IP=""
+
 # Parse arguments
 if [[ $# -lt 1 ]]; then
-	echo "Usage: $0 <config_file> <zone_file1> [zone_file2 ...] [-- <slave_ip> <slave_config>]" >&2
+	echo "Usage: $0 [--exim-master DIR] [--exim-slave DIR] [--exim-mail DIR IP] <config_file> <zone_file1> [zone_file2 ...] [-- <slave_ip> <slave_config>]" >&2
 	exit 1
 fi
+
+# Parse optional flags before zone files
+while [[ $# -gt 0 ]] && [[ $1 == --* ]]; do
+	case "$1" in
+	--exim-master)
+		shift
+		EXIM_MASTER_DIR="$1"
+		shift
+		;;
+	--exim-slave)
+		shift
+		EXIM_SLAVE_DIR="$1"
+		shift
+		;;
+	--exim-mail)
+		shift
+		EXIM_MAIL_DIR="$1"
+		shift
+		EXIM_MAIL_IP="$1"
+		shift
+		;;
+	*)
+		# Unknown flag, break and process as file arguments
+		break
+		;;
+	esac
+done
 
 # Get the current working directory where the script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -74,6 +114,25 @@ echo "Restarting BIND9 on master..."
 systemctl restart bind9
 systemctl status bind9
 
+# Deploy Exim configurations if specified
+if [[ -n ${EXIM_MASTER_DIR} ]]; then
+	echo ""
+	echo "========================================="
+	echo "Deploying Exim config to master..."
+	echo "========================================="
+
+	if [[ ! -f "${EXIM_MASTER_DIR}/00_khms" ]]; then
+		echo "Error: Exim master config not found: ${EXIM_MASTER_DIR}/00_khms" >&2
+		exit 1
+	fi
+
+	echo "Copying Exim config to /etc/exim4/conf.d/main/ on master..."
+	cp -av "${EXIM_MASTER_DIR}/00_khms" /etc/exim4/conf.d/main/00_khms
+	echo "Restarting Exim4 on master..."
+	systemctl restart exim4
+	systemctl status exim4
+fi
+
 # Optional: Deploy to slave server
 if [[ -n ${SLAVE_IP} && -n ${SLAVE_CONFIG} ]]; then
 	echo ""
@@ -106,6 +165,42 @@ if [[ -n ${SLAVE_IP} && -n ${SLAVE_CONFIG} ]]; then
 	echo "Restarting BIND9 on slave..."
 	ssh "root@${SLAVE_IP}" systemctl restart bind9
 	ssh "root@${SLAVE_IP}" systemctl status bind9
+
+	# Deploy Exim config to slave if specified
+	if [[ -n ${EXIM_SLAVE_DIR} ]]; then
+		echo ""
+		echo "Deploying Exim config to slave at ${SLAVE_IP}..."
+
+		if [[ ! -f "${EXIM_SLAVE_DIR}/00_khms" ]]; then
+			echo "Error: Exim slave config not found: ${EXIM_SLAVE_DIR}/00_khms" >&2
+			exit 1
+		fi
+
+		echo "Copying Exim config to ${SLAVE_IP}:/etc/exim4/conf.d/main/"
+		scp -p "${EXIM_SLAVE_DIR}/00_khms" "root@${SLAVE_IP}:/etc/exim4/conf.d/main/00_khms"
+		echo "Restarting Exim4 on slave..."
+		ssh "root@${SLAVE_IP}" systemctl restart exim4
+		ssh "root@${SLAVE_IP}" systemctl status exim4
+	fi
+fi
+
+# Deploy Exim config to mail server if specified
+if [[ -n ${EXIM_MAIL_DIR} && -n ${EXIM_MAIL_IP} ]]; then
+	echo ""
+	echo "========================================="
+	echo "Deploying Exim config to mail server: ${EXIM_MAIL_IP}"
+	echo "========================================="
+
+	if [[ ! -f "${EXIM_MAIL_DIR}/00_khms" ]]; then
+		echo "Error: Exim mail config not found: ${EXIM_MAIL_DIR}/00_khms" >&2
+		exit 1
+	fi
+
+	echo "Copying Exim config to ${EXIM_MAIL_IP}:/etc/exim4/conf.d/main/"
+	scp -p "${EXIM_MAIL_DIR}/00_khms" "root@${EXIM_MAIL_IP}:/etc/exim4/conf.d/main/00_khms"
+	echo "Restarting Exim4 on mail server..."
+	ssh "root@${EXIM_MAIL_IP}" systemctl restart exim4
+	ssh "root@${EXIM_MAIL_IP}" systemctl status exim4
 fi
 
 echo ""

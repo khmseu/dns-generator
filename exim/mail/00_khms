@@ -1,0 +1,9 @@
+# Exim4 DKIM configuration for mail server (mail.cloud)
+# This configuration signs outgoing mail with khms1.de domain
+# See: /etc/exim4/conf.d/main/00_khms for deployment location
+
+DKIM_CANON = relaxed
+DKIM_DOMAIN = khms1.de
+DKIM_PRIVATE_KEY = /etc/exim4/dkim/khms.eu.key
+DKIM_SELECTOR = dns_1
+DKIM_SIGN_HEADERS = from:to:cc:date:subject
