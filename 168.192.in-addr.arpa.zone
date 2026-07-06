@@ -1,7 +1,7 @@
 ; 168.192.in-addr.arpa.zone
 
 168.192.in-addr.arpa.	86400	IN	SOA	( ns0.khms1.de. root.khms1.de.
-				2026070601	;serial
+				2026070603	;serial
 				43200		;refresh
 				7200		;retry
 				2419200		;expire

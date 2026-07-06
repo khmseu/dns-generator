@@ -8,6 +8,7 @@ generator - BIND DNS zone file and configuration generator
 
 Generates BIND DNS zone files and configuration from network.ini.
 Processes host and subnet definitions to create A, AAAA, PTR, CNAME, SOA, and NS records.
+Use `--no-deploy` to generate files only without running deploy-zones.sh.
 
 =cut
 
@@ -240,6 +241,16 @@ sub bind_list(@) {
 # ============================================================================
 
 sub main() {
+
+    my $skip_deploy = 0;
+    for my $arg (@ARGV) {
+        if ( $arg eq '--no-deploy' ) {
+            $skip_deploy = 1;
+        }
+        else {
+            die "Unknown option '$arg'. Supported options: --no-deploy\n";
+        }
+    }
 
     # ========================================================================
     # Load and parse network.ini configuration
@@ -824,8 +835,36 @@ EOF
     # Deploy generated files using sudo script
     # ========================================================================
 
-    # Build deployment command with optional slave parameters
-    my @deploy_cmd_args = @files_master;
+    # Build deployment command with optional Exim and slave parameters
+    my @deploy_opts;
+
+    # Auto-deploy desktop Exim config when available
+    if ( -f 'exim/desktop/00_khms' ) {
+        push @deploy_opts, '--exim-desktop', 'exim/desktop';
+    }
+
+    # Auto-deploy dns Exim config when available; applied only when slave is present
+    if ( -f 'exim/dns/00_khms' ) {
+        push @deploy_opts, '--exim-dns', 'exim/dns';
+    }
+
+    # Auto-deploy mail Exim config when available and target address can be resolved
+    if ( -f 'exim/mail/00_khms' ) {
+        my $mail_target_ip =
+             $addr_map{"mail.mailtunnel.$internal_domain"}
+          || $addr_map{"mail.cloud.$internal_domain"}
+          || $addr_map{"mail.$internal_domain"}
+          || $addr_map{"mail.$external_domains[0]"};
+
+        if ($mail_target_ip) {
+            push @deploy_opts, '--exim-mail', 'exim/mail', $mail_target_ip;
+        }
+        else {
+            print "Warning: exim/mail/00_khms exists but mail target IP could not be resolved; skipping --exim-mail\n";
+        }
+    }
+
+    my @deploy_cmd_args = ( @deploy_opts, @files_master );
 
     if ( @files_slave && $slave && $addr_map{$slave} ) {
 
@@ -840,8 +879,13 @@ EOF
     print "  sudo ./deploy-zones.sh ", join( ' ', @deploy_cmd_args ), "\n";
     print "========================================\n";
 
+    if ($skip_deploy) {
+        print "\nAutomatic deployment skipped (--no-deploy).\n";
+        print "Use the command above when you want to deploy.\n";
+    }
+
     # Attempt deployment if script exists and is executable
-    if ( -x './deploy-zones.sh' ) {
+    elsif ( -x './deploy-zones.sh' ) {
         print "\nAttempting automatic deployment...\n";
         my $deploy_cmd = 'sudo ./deploy-zones.sh ' . join( ' ', @deploy_cmd_args );
         system($deploy_cmd);
